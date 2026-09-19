@@ -10,7 +10,15 @@
     "storage"
   ],
   "host_permissions": [
-    "https://careers.tencent.com/*"
+    "https://careers.tencent.com/*",
+    "https://zhaopin.meituan.com/*",
+    "https://app.mokahr.com/*",
+    "https://jobs.bytedance.com/*",
+    "https://*.jobs.feishu.cn/*",
+    "https://boards-api.greenhouse.io/*",
+    "https://api.lever.co/*",
+    "https://api.eu.lever.co/*",
+    "https://api.ashbyhq.com/*"
   ],
   "action": {
     "default_title": "AutumnApply",

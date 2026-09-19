@@ -1,7 +1,7 @@
 import { createApplicationRecord, upsertApplication } from "./shared/applications.js";
 import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
-import { tencentProvider } from "./shared/providers/tencent.js";
+import { createOfficialProviders } from "./shared/providers/sources.js";
 import { loadApplications, loadDiscovery, loadProfile, saveApplications, saveDiscovery } from "./shared/storage.js";
 
 const form = document.querySelector("#search-form");
@@ -86,7 +86,7 @@ form.addEventListener("submit", async (event) => {
     const output = await discoverJobs({
       profile,
       instructions: readInstructions(),
-      providers: [tencentProvider],
+      providers: createOfficialProviders(),
       onProgress: (message) => { statusElement.textContent = message; },
     });
     discovery = await saveDiscovery(output);

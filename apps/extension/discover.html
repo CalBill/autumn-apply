@@ -15,7 +15,7 @@
     <main>
       <aside>
         <form id="search-form" class="panel">
-          <div class="source"><span></span><div><strong>当前岗位源</strong><p>腾讯官方招聘 · 公开只读接口</p></div></div>
+          <div class="source"><span></span><div><strong>企业官网来源</strong><p>腾讯、美团、DeepSeek、月之暗面、智谱AI · 公开只读接口</p></div></div>
           <label>搜索岗位<input name="queries" placeholder="数据分析、商业分析" /><small>留空时使用资料库中的目标岗位，最多三个方向。</small></label>
           <label>工作地点<input name="locations" placeholder="上海、深圳" /></label>
           <label>要求必须包含<input name="requiredKeywords" placeholder="实习、Python" /><small>详情中必须同时包含这些词。</small></label>
@@ -26,7 +26,7 @@
             <label>最近天数<input name="recentDays" type="number" min="1" max="365" /></label>
           </div>
           <button id="search-button" class="primary" type="submit">开始寻找岗位</button>
-          <p class="boundary">只读取公开职位，不登录、不投递、不发送个人资料。当前结果不代表整个招聘市场。</p>
+          <p class="boundary">只读取已核验的企业官方招聘入口，不登录、不投递、不发送个人资料。单一来源失败不会阻止其他来源返回结果。</p>
         </form>
       </aside>
 

@@ -21,6 +21,12 @@ export function normalizeJob(input = {}) {
     company: cleanText(input.company) || "未识别公司",
     location: cleanText(input.location),
     description: cleanText(input.description).slice(0, 40_000),
+    publishedAt: cleanText(input.publishedAt) || null,
+    deadline: cleanText(input.deadline) || null,
+    sourceType: cleanText(input.sourceType) || "job-posting",
+    sourceName: cleanText(input.sourceName) || sourcePlatform || "unknown",
+    sourceVerified: input.sourceVerified === true,
+    metadata: input.metadata && typeof input.metadata === "object" ? input.metadata : {},
     capturedAt: cleanText(input.capturedAt) || new Date().toISOString(),
   };
 }

@@ -9,14 +9,15 @@ AutumnApply is an independent project. Its initial architecture was informed by 
 | Offer Harvester | https://github.com/JiemsLBJ/offer-harvester | MIT | Design reference for a China-focused application workflow |
 | czc-good-job | https://github.com/czc6666/czc-good-job | MIT | Design reference for a narrow platform adapter and local backend split |
 
-The Tencent public-careers provider is adapted from `JiemsLBJ/offer-harvester` at commit `cd0086ea48786c0216e6a5905be613bcfa8471cd` under the MIT License:
+The Tencent public-careers provider and the official career-system provider shapes are adapted from `JiemsLBJ/offer-harvester` at commit `cd0086ea48786c0216e6a5905be613bcfa8471cd` under the MIT License. The latter records that its provider shapes were adapted from `career-ops` v1.32.0 under the MIT License:
 
 ```text
 Copyright (c) 2026 Mads Lorentzen (upstream ai-job-search)
 Copyright (c) 2026 JiemsLBJ (China-market automation pipeline)
+Copyright (c) 2025 Caleb John & career-ops contributors
 ```
 
-The adapted browser module retains only public, read-only search and detail fetching. It does not include application automation, user profiles or tracking code from that project.
+The adapted browser modules retain only public, read-only search and detail fetching for Tencent, Meituan, Feishu Jobs, Moka, Greenhouse, Lever and Ashby. They do not include application automation, user profiles, scoring, tracking, anti-bot identity spoofing or retry behavior from those projects. Moka response decryption uses the public key delivered in the public website response and was ported from Node crypto to the browser Web Crypto API.
 
 Before adding third-party source code, a contributor must:
 
