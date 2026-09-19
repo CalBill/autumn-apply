@@ -13,6 +13,7 @@
     "build": "npm run build:extension",
     "build:extension": "node scripts/build-extension.mjs",
     "check": "node scripts/check-scaffold.mjs && node scripts/check-extension.mjs",
+    "preview:fixture": "node scripts/serve-fixture.mjs",
     "test": "node --test apps/extension/shared/*.test.js",
     "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit"
   },

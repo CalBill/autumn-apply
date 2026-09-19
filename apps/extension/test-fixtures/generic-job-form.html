@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>数据分析实习生 | 秋招科技</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; color: #17221b; background: #f4f1e8; }
+      body { width: min(900px, calc(100% - 2rem)); margin: 2rem auto; }
+      article, form { margin-bottom: 1rem; padding: 1.5rem; border: 1px solid #d8d3c5; border-radius: 16px; background: #fff; }
+      .company-name { color: #1f6a45; font-weight: 700; }
+      .job-location { color: #667068; }
+      label { display: grid; gap: 0.35rem; margin: 0.8rem 0; font-weight: 650; }
+      input, textarea, select { padding: 0.7rem; border: 1px solid #aaa; border-radius: 8px; font: inherit; }
+      button { padding: 0.8rem 1rem; border: 0; border-radius: 8px; color: #fff; background: #1f6a45; }
+    </style>
+  </head>
+  <body>
+    <article>
+      <div class="company-name">秋招科技</div>
+      <h1>数据分析实习生</h1>
+      <p class="job-location">上海</p>
+      <div class="job-description">
+        <h2>岗位描述</h2>
+        <p>面向 2027 届毕业生，本科及以上学历。使用 Python、SQL 开展业务数据分析，完成数据清洗、指标设计和可视化。</p>
+        <p>熟悉 Tableau、Power BI 或其他可视化工具者优先。重视清晰沟通和对分析结论的事实验证。</p>
+      </div>
+    </article>
+
+    <form id="application" onsubmit="event.preventDefault(); document.querySelector('#submit-result').textContent='测试页面收到人工提交。';">
+      <h2>合成申请表</h2>
+      <label>姓名<input name="candidateName" /></label>
+      <label>邮箱地址<input name="email" type="email" /></label>
+      <label>手机号码<input name="mobile" /></label>
+      <label>毕业院校<input name="school" /></label>
+      <label>学历<select name="degree"><option value="">请选择</option><option>本科</option><option>硕士</option><option>博士</option></select></label>
+      <label>所学专业<input name="major" /></label>
+      <label>专业技能<textarea name="skills"></textarea></label>
+      <label>推荐码（已有内容，不应覆盖）<input name="referral" value="SYNTHETIC-REFERRAL" /></label>
+      <label>身份证号码<input name="identityNumber" /></label>
+      <label>上传简历<input name="resume" type="file" /></label>
+      <label><input name="declaration" type="checkbox" /> 我确认上述信息真实</label>
+      <button type="submit">最终提交（仅测试页面）</button>
+      <p id="submit-result"></p>
+    </form>
+  </body>
+</html>

@@ -6,18 +6,19 @@
 - [x] Monorepo boundaries
 - [x] Shared domain contracts
 - [x] Privacy and third-party attribution policy
-- [ ] Automated formatting, linting and tests
+- [x] Automated tests and CI
+- [ ] Automated formatting and linting
 
 ## Milestone 1 — Review-first MVP
 
-- [ ] Local candidate profile editor
+- [x] Local candidate profile editor
 - [ ] Import a text-based PDF or DOCX resume
-- [ ] Extract a job description from the active browser tab
-- [ ] Explain hard-condition and relevance matching
-- [ ] Generate a fact-grounded resume draft
-- [ ] Fill standard form controls
-- [ ] Highlight uncertain or unfilled fields
-- [ ] Stop before final submission
+- [x] Extract a job description from the active browser tab
+- [x] Explain hard-condition and relevance matching
+- [x] Generate a fact-grounded resume draft
+- [x] Fill standard form controls
+- [x] Highlight uncertain or unfilled fields
+- [x] Stop before final submission
 
 ## Milestone 2 — China recruitment adapters
 
