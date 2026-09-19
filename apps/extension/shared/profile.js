@@ -27,6 +27,7 @@ export function createEmptyProfile() {
       roles: [],
       locations: [],
       graduationYear: "",
+      experienceYears: 0,
       minimumScore: 60,
     },
     updatedAt: new Date().toISOString(),
@@ -38,7 +39,7 @@ export function splitList(value) {
     return value.map((item) => String(item).trim()).filter(Boolean);
   }
   return String(value ?? "")
-    .split(/[，,;；\n]/)
+    .split(/[、，,;；\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -108,6 +109,7 @@ export function normalizeProfile(input = {}) {
       roles: splitList(preferences.roles),
       locations: splitList(preferences.locations),
       graduationYear: cleanText(preferences.graduationYear),
+      experienceYears: Math.min(50, Math.max(0, Number(preferences.experienceYears) || 0)),
       minimumScore: Math.min(100, Math.max(0, Number(preferences.minimumScore) || 60)),
     },
     updatedAt: new Date().toISOString(),

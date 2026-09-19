@@ -1,6 +1,6 @@
 {
   "name": "autumn-apply",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Local-first AI job application assistant for China campus recruitment.",
@@ -14,7 +14,7 @@
     "build:extension": "node scripts/build-extension.mjs",
     "check": "node scripts/check-scaffold.mjs && node scripts/check-extension.mjs",
     "preview:fixture": "node scripts/serve-fixture.mjs",
-    "test": "node --test apps/extension/shared/*.test.js",
+    "test": "node --test apps/extension/shared/*.test.js apps/extension/shared/providers/*.test.js",
     "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit"
   },
   "devDependencies": {

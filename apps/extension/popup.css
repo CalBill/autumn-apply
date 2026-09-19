@@ -28,7 +28,7 @@ p { color: var(--muted); line-height: 1.5; }
 button { border: 0; border-radius: 9px; padding: 0.68rem 0.9rem; cursor: pointer; font-weight: 750; }
 .primary { color: #fff; background: var(--green); }
 .secondary { color: var(--green-dark); background: #e4ede7; }
-.icon-button { padding: 0.4rem 0.6rem; color: #fff; background: #ffffff1c; }
+.icon-button, .icon-link { padding: 0.4rem 0.6rem; color: #fff; background: #ffffff1c; text-decoration: none; border-radius: 8px; font-size: 0.78rem; }
 .full { width: 100%; }
 .notice { border-color: #e7b08c; background: #fff5eb; }
 .notice p { margin-bottom: 0.7rem; }

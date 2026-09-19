@@ -9,7 +9,14 @@ AutumnApply is an independent project. Its initial architecture was informed by 
 | Offer Harvester | https://github.com/JiemsLBJ/offer-harvester | MIT | Design reference for a China-focused application workflow |
 | czc-good-job | https://github.com/czc6666/czc-good-job | MIT | Design reference for a narrow platform adapter and local backend split |
 
-No source code from these repositories is included in the initial scaffold.
+The Tencent public-careers provider is adapted from `JiemsLBJ/offer-harvester` at commit `cd0086ea48786c0216e6a5905be613bcfa8471cd` under the MIT License:
+
+```text
+Copyright (c) 2026 Mads Lorentzen (upstream ai-job-search)
+Copyright (c) 2026 JiemsLBJ (China-market automation pipeline)
+```
+
+The adapted browser module retains only public, read-only search and detail fetching. It does not include application automation, user profiles or tracking code from that project.
 
 Before adding third-party source code, a contributor must:
 

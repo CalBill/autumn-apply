@@ -4,7 +4,10 @@ const root = new URL("../apps/extension/", import.meta.url);
 const manifest = JSON.parse(await readFile(new URL("manifest.json", root), "utf8"));
 
 if (manifest.manifest_version !== 3) throw new Error("Extension must use Manifest V3");
-if (manifest.host_permissions?.length) throw new Error("Initial extension must not request broad host permissions");
+const allowedHosts = new Set(["https://careers.tencent.com/*"]);
+for (const host of manifest.host_permissions ?? []) {
+  if (!allowedHosts.has(host)) throw new Error(`Unexpected extension host permission: ${host}`);
+}
 
 const allowedPermissions = new Set(["activeTab", "downloads", "scripting", "storage"]);
 for (const permission of manifest.permissions ?? []) {
@@ -13,8 +16,10 @@ for (const permission of manifest.permissions ?? []) {
 
 for (const path of [
   "options.html", "options.js", "options.css", "popup.html", "popup.js", "popup.css",
+  "discover.html", "discover.js", "discover.css",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
+  "shared/discovery.js", "shared/providers/tencent.js",
 ]) {
   await access(new URL(path, root));
 }

@@ -89,6 +89,7 @@ function collectProfile() {
       roles: splitList(named.get("roles")),
       locations: splitList(named.get("locations")),
       graduationYear: named.get("graduationYear"),
+      experienceYears: named.get("experienceYears"),
       minimumScore: named.get("minimumScore"),
     },
   });
@@ -104,6 +105,7 @@ function renderProfile(profile) {
   form.elements.namedItem("roles").value = profile.preferences.roles.join("、");
   form.elements.namedItem("locations").value = profile.preferences.locations.join("、");
   form.elements.namedItem("graduationYear").value = profile.preferences.graduationYear;
+  form.elements.namedItem("experienceYears").value = profile.preferences.experienceYears;
   form.elements.namedItem("minimumScore").value = profile.preferences.minimumScore;
 
   for (const list of Object.values(lists)) list.replaceChildren();

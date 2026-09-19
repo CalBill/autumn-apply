@@ -4,7 +4,7 @@ import test from "node:test";
 import { createEmptyProfile, normalizeProfile, splitList, validateProfile } from "./profile.js";
 
 test("splitList accepts Chinese punctuation and removes blanks", () => {
-  assert.deepEqual(splitList("Python，SQL; 数据分析\nGit"), ["Python", "SQL", "数据分析", "Git"]);
+  assert.deepEqual(splitList("Python，SQL; 数据分析、Git"), ["Python", "SQL", "数据分析", "Git"]);
 });
 
 test("normalizeProfile removes unknown fields and normalizes arrays", () => {

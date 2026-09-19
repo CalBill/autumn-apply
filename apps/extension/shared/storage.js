@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   profile: "candidateProfile",
   applications: "applications",
   draft: "currentDraft",
+  discovery: "lastDiscovery",
 };
 
 function storageArea() {
@@ -48,4 +49,14 @@ export async function loadApplications() {
 export async function saveApplications(applications) {
   await storageArea().set({ [STORAGE_KEYS.applications]: applications });
   return applications;
+}
+
+export async function loadDiscovery() {
+  const result = await storageArea().get(STORAGE_KEYS.discovery);
+  return result[STORAGE_KEYS.discovery] ?? null;
+}
+
+export async function saveDiscovery(discovery) {
+  await storageArea().set({ [STORAGE_KEYS.discovery]: discovery });
+  return discovery;
 }

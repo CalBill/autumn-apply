@@ -35,6 +35,13 @@ function requiredGraduationYears(text) {
   });
 }
 
+export function requiredExperienceYears(text) {
+  const values = [...String(text).matchAll(/(\d+)(?:\s*[-–—~至]\s*(\d+))?\s*年(?:及以上|以上)?[^，。；;\n]{0,16}经验/g)]
+    .map((match) => Number(match[1]))
+    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 50);
+  return values.length ? Math.max(...values) : null;
+}
+
 function dedupe(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -91,6 +98,17 @@ export function analyzeJob(rawJob, profile) {
     } else {
       hardRequirementsMet = false;
       gaps.push(`岗位面向 ${years.join("/")} 届，个人资料为 ${profile.preferences.graduationYear} 届`);
+    }
+  }
+
+  const experienceYears = requiredExperienceYears(job.description);
+  if (experienceYears !== null) {
+    if (profile.preferences.experienceYears >= experienceYears) {
+      score += 5;
+      strengths.push(`全职工作年限满足 ${experienceYears} 年经验要求`);
+    } else {
+      hardRequirementsMet = false;
+      gaps.push(`岗位要求至少 ${experienceYears} 年相关经验，个人资料为 ${profile.preferences.experienceYears} 年`);
     }
   }
 

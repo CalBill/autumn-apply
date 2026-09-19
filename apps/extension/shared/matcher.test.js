@@ -36,3 +36,14 @@ test("hard graduation mismatch caps the score", () => {
   assert.ok(result.score <= 49);
   assert.ok(result.gaps.some((item) => item.includes("2026")));
 });
+
+test("required full-time experience is treated as a hard condition", () => {
+  const result = analyzeJob({
+    title: "高级数据分析师",
+    description: "本科及以上学历，要求3年以上互联网数据分析经验，熟悉 Python 和 SQL。",
+  }, profile);
+
+  assert.equal(result.hardRequirementsMet, false);
+  assert.ok(result.score <= 49);
+  assert.ok(result.gaps.some((item) => item.includes("3 年")));
+});
