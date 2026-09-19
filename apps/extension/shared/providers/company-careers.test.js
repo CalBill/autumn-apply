@@ -3,6 +3,7 @@ import test from "node:test";
 import { webcrypto } from "node:crypto";
 
 import { createCompanyProvider, decryptMoka, plainText, resolveBoard, searchCompanyJobs } from "./company-careers.js";
+import { parseCompanySourceText, serializeCompanySources } from "./sources.js";
 
 test("resolves supported official career systems without guessing arbitrary tenants", () => {
   assert.equal(resolveBoard({ url: "https://zhaopin.meituan.com/web/social" }).provider, "meituan");
@@ -67,4 +68,18 @@ test("creates one provider per verified company source", () => {
   const provider = createCompanyProvider({ id: "example", name: "示例公司", url: "https://jobs.lever.co/example" }, async () => ({ ok: true, json: async () => [] }));
   assert.equal(provider.id, "example");
   assert.equal(provider.kind, "official-career-site");
+});
+
+test("parses user-maintained official source lines and rejects unsupported URLs", () => {
+  const parsed = parseCompanySourceText(`
+    示例 Moka | https://app.mokahr.com/campus-recruitment/example/12345
+    示例 Lever | https://jobs.lever.co/example
+    错误来源 | https://careers.example.com
+    缺少分隔符
+  `);
+  assert.equal(parsed.sources.length, 2);
+  assert.equal(parsed.errors.length, 2);
+  assert.match(parsed.errors[0], /尚未支持/);
+  assert.match(parsed.errors[1], /公司名/);
+  assert.equal(serializeCompanySources(parsed.sources).split("\n").length, 2);
 });

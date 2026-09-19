@@ -6,7 +6,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; color: var(--ink); background: var(--paper); }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 header { display: flex; justify-content: space-between; gap: 2rem; padding: 3rem max(2rem, calc((100vw - 1240px) / 2)); color: #fff; background: var(--dark); }
 header h1 { margin: 0.3rem 0 0.6rem; font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -0.045em; }
 header p { margin: 0; color: #d9e6dd; }
@@ -21,8 +21,9 @@ form { display: grid; gap: 1rem; padding: 1.25rem; }
 .source p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.8rem; }
 label { display: grid; gap: 0.35rem; color: #445047; font-size: 0.85rem; font-weight: 700; }
 small { color: var(--muted); font-weight: 400; line-height: 1.4; }
-input { width: 100%; padding: 0.72rem; border: 1px solid #c8c4b7; border-radius: 9px; outline: none; background: #fff; }
-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,106,69,.12); }
+input, textarea { width: 100%; padding: 0.72rem; border: 1px solid #c8c4b7; border-radius: 9px; outline: none; background: #fff; }
+textarea { resize: vertical; line-height: 1.45; }
+input:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,106,69,.12); }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; }
 button, .secondary { border: 0; border-radius: 9px; padding: 0.7rem 0.9rem; cursor: pointer; text-align: center; text-decoration: none; font-weight: 750; }
 .primary { color: #fff; background: var(--green); }

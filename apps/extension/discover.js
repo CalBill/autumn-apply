@@ -1,8 +1,8 @@
 import { createApplicationRecord, upsertApplication } from "./shared/applications.js";
 import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
-import { createDiscoveryProviders } from "./shared/providers/sources.js";
-import { loadApplications, loadDiscovery, loadProfile, saveApplications, saveDiscovery } from "./shared/storage.js";
+import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
+import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, saveApplications, saveCompanySources, saveDiscovery } from "./shared/storage.js";
 
 const form = document.querySelector("#search-form");
 const button = document.querySelector("#search-button");
@@ -15,6 +15,7 @@ const summaryElement = document.querySelector("#result-summary");
 let profile = await loadProfile();
 let applications = await loadApplications();
 let discovery = await loadDiscovery();
+let companySources = await loadCompanySources();
 
 function list(element, items, emptyText) {
   element.replaceChildren();
@@ -87,10 +88,13 @@ form.addEventListener("submit", async (event) => {
   emptyElement.classList.add("hidden");
   errorsElement.classList.add("hidden");
   try {
+    const parsedSources = parseCompanySourceText(form.elements.companySources.value);
+    if (parsedSources.errors.length) throw new Error(parsedSources.errors.join("；"));
+    companySources = await saveCompanySources(parsedSources.sources);
     const output = await discoverJobs({
       profile,
       instructions: readInstructions(),
-      providers: createDiscoveryProviders(),
+      providers: createDiscoveryProviders(fetch, companySources),
       onProgress: (message) => { statusElement.textContent = message; },
     });
     discovery = await saveDiscovery(output);
@@ -104,6 +108,8 @@ form.addEventListener("submit", async (event) => {
     button.disabled = false;
   }
 });
+
+form.elements.companySources.value = serializeCompanySources(companySources);
 
 if (!profileHasUsefulData(profile)) {
   button.disabled = true;

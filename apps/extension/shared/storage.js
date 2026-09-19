@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   applications: "applications",
   draft: "currentDraft",
   discovery: "lastDiscovery",
+  companySources: "companySources",
 };
 
 function storageArea() {
@@ -59,4 +60,17 @@ export async function loadDiscovery() {
 export async function saveDiscovery(discovery) {
   await storageArea().set({ [STORAGE_KEYS.discovery]: discovery });
   return discovery;
+}
+
+export async function loadCompanySources() {
+  const result = await storageArea().get(STORAGE_KEYS.companySources);
+  return Array.isArray(result[STORAGE_KEYS.companySources]) ? result[STORAGE_KEYS.companySources] : [];
+}
+
+export async function saveCompanySources(sources) {
+  const normalized = Array.isArray(sources)
+    ? sources.map(({ id, name, url }) => ({ id: String(id), name: String(name), url: String(url), enabled: true }))
+    : [];
+  await storageArea().set({ [STORAGE_KEYS.companySources]: normalized });
+  return normalized;
 }
