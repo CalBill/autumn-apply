@@ -14,9 +14,15 @@
 - [x] Local candidate profile editor
 - [x] Provider interface for automatic job discovery
 - [x] Tencent public-careers provider
+- [x] Official company source registry
+- [x] Meituan and Moka public-careers providers
+- [x] Shared adapters for Feishu Jobs, Greenhouse, Lever and Ashby
+- [x] User-maintained official source watchlist
+- [x] WeChat public-article discovery with CAPTCHA stop
+- [x] Source trust labels for official jobs and unverified article clues
 - [x] User-directed role, location, include and exclude filters
 - [x] Fetch job details, rank matches and save a shortlist
-- [ ] Additional China-market job providers
+- [ ] Expand the curated official-source catalog
 - [ ] Import a text-based PDF or DOCX resume
 - [x] Extract a job description from the active browser tab
 - [x] Explain hard-condition and relevance matching
@@ -28,7 +34,7 @@
 ## Milestone 2 — China recruitment adapters
 
 - [ ] Beisen adapter
-- [ ] Moka adapter
+- [x] Moka discovery adapter
 - [ ] Nowcoder adapter
 - [ ] Zhaopin and 51job research
 - [ ] Synthetic regression fixtures for each adapter

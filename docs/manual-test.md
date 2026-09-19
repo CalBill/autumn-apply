@@ -36,11 +36,14 @@ Save the profile. Reload the options page and confirm the values remain availabl
 
 1. Open the extension popup and choose **找岗位**.
 2. Search for `数据分析`, optionally select a city, set the maximum to 3 and keep the minimum score low for the smoke test.
-3. Confirm the page reports `腾讯招聘` as the only current source.
-4. Confirm each result links to an official Tencent job and contains a score, strengths and warnings.
-5. Add one result to the shortlist and confirm the button changes to `已加入候选`.
+3. Confirm the source summary includes multiple company career sites and `微信公众号`.
+4. Confirm official results have an `企业官网岗位` label and article results have a `公众号招聘信息` label.
+5. Confirm article results display a verification warning and link to the original search result.
+6. Add one result to the shortlist and confirm the button changes to `已加入候选`.
 
-This step uses Tencent's public careers API and therefore requires network access. It sends search terms, not the candidate profile.
+Optionally add one extra official source using `公司名 | https://官方招聘入口`. Use a supported Moka, Feishu Jobs, Greenhouse, Lever or Ashby URL that you independently verified from the company's website. Confirm an unsupported URL is rejected rather than treated as connected.
+
+This step uses public career APIs and Sogou Weixin, so it requires network access. It sends search terms and the graduation cohort used to refine article search—not the candidate's name, contact details or resume. Sogou may request a CAPTCHA; confirm the extension reports that condition and stops.
 
 ## 4. Open the synthetic job page
 
@@ -77,8 +80,8 @@ Open `http://127.0.0.1:4173/test-fixtures/generic-job-form.html`.
 
 ## Expected safety properties
 
-- No network request is made by the extension.
-- No broad host permission is requested.
+- Discovery network requests are limited to declared public career-system and Sogou Weixin hosts.
+- No unrestricted all-sites host permission is requested.
 - No real candidate data is used.
 - No existing form value is overwritten.
 - No final submission is triggered.
