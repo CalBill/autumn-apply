@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutumnApply</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div><span class="mark">A</span><strong>AutumnApply</strong></div>
+      <button id="open-options" class="icon-button" title="打开资料库">设置</button>
+    </header>
+
+    <main>
+      <section id="onboarding" class="notice hidden">
+        <strong>先建立你的本地资料库</strong>
+        <p>至少填写姓名、联系方式、教育经历和技能，才能进行匹配。</p>
+        <button id="setup-profile" class="primary">打开资料库</button>
+      </section>
+
+      <section id="start-panel">
+        <p class="kicker">当前页面</p>
+        <h1>分析这个岗位</h1>
+        <p>读取页面上的公开岗位信息，并与本地资料进行可解释匹配。</p>
+        <button id="analyze-job" class="primary full">提取并分析</button>
+        <p class="microcopy">只在你点击时读取当前标签页；不会发送或提交任何内容。</p>
+      </section>
+
+      <section id="result-panel" class="hidden">
+        <div class="job-heading">
+          <div><p id="job-company" class="kicker"></p><h1 id="job-title"></h1><p id="job-meta"></p></div>
+          <div id="score" class="score"><strong>0</strong><span>匹配</span></div>
+        </div>
+        <div id="decision" class="decision"></div>
+        <div class="result-grid">
+          <div><h2>优势</h2><ul id="strengths"></ul></div>
+          <div><h2>差距与提醒</h2><ul id="gaps"></ul></div>
+        </div>
+        <div class="actions">
+          <button id="generate-resume" class="primary">生成岗位版简历</button>
+          <button id="reanalyze" class="secondary">重新分析</button>
+        </div>
+      </section>
+
+      <section id="resume-panel" class="hidden">
+        <div class="section-title"><div><p class="kicker">岗位版材料</p><h2>基于真实经历生成</h2></div><span class="safe-chip">无新增事实</span></div>
+        <textarea id="resume-preview" readonly></textarea>
+        <div class="actions">
+          <button id="copy-resume" class="primary">复制 Markdown</button>
+          <button id="download-resume" class="secondary">下载 .md</button>
+        </div>
+      </section>
+
+      <div id="status" role="status"></div>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

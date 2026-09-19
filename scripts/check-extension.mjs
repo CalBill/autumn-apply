@@ -11,7 +11,10 @@ for (const permission of manifest.permissions ?? []) {
   if (!allowedPermissions.has(permission)) throw new Error(`Unexpected extension permission: ${permission}`);
 }
 
-for (const path of ["options.html", "options.js", "options.css", "shared/profile.js", "shared/storage.js"]) {
+for (const path of [
+  "options.html", "options.js", "options.css", "popup.html", "popup.js", "popup.css",
+  "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
+]) {
   await access(new URL(path, root));
 }
 

@@ -29,3 +29,13 @@ export async function saveProfile(profile) {
 export async function clearLocalData() {
   await storageArea().remove(Object.values(STORAGE_KEYS));
 }
+
+export async function loadDraft() {
+  const result = await storageArea().get(STORAGE_KEYS.draft);
+  return result[STORAGE_KEYS.draft] ?? null;
+}
+
+export async function saveDraft(draft) {
+  await storageArea().set({ [STORAGE_KEYS.draft]: draft });
+  return draft;
+}

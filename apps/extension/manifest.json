@@ -10,7 +10,8 @@
     "storage"
   ],
   "action": {
-    "default_title": "AutumnApply"
+    "default_title": "AutumnApply",
+    "default_popup": "popup.html"
   },
   "options_page": "options.html"
 }
