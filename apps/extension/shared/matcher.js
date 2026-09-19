@@ -122,6 +122,10 @@ export function analyzeJob(rawJob, profile) {
     }
   }
 
+  if (job.sourceType === "wechat-article" && !job.sourceVerified) {
+    warnings.push("这是一条公众号招聘线索，请在投递前核对企业官网、届别和截止日期");
+  }
+
   if (job.description.length < 80) warnings.push("页面提取到的岗位描述较短，匹配结果可能不完整");
   if (!hardRequirementsMet) score = Math.min(score, 49);
   score = Math.min(100, Math.max(0, score));

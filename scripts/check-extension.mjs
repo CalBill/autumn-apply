@@ -14,6 +14,7 @@ const allowedHosts = new Set([
   "https://api.lever.co/*",
   "https://api.eu.lever.co/*",
   "https://api.ashbyhq.com/*",
+  "https://weixin.sogou.com/*",
 ]);
 for (const host of manifest.host_permissions ?? []) {
   if (!allowedHosts.has(host)) throw new Error(`Unexpected extension host permission: ${host}`);
@@ -29,7 +30,7 @@ for (const path of [
   "discover.html", "discover.js", "discover.css",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
-  "shared/discovery.js", "shared/providers/tencent.js", "shared/providers/company-careers.js", "shared/providers/sources.js",
+  "shared/discovery.js", "shared/providers/tencent.js", "shared/providers/company-careers.js", "shared/providers/wechat.js", "shared/providers/sources.js",
 ]) {
   await access(new URL(path, root));
 }

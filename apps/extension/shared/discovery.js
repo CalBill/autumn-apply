@@ -30,7 +30,9 @@ function containsAny(text, values) {
 
 function passesSummaryFilter(job, instructions) {
   const text = `${job.title} ${job.company} ${job.location}`;
-  if (instructions.locations.length && !containsAny(job.location, instructions.locations)) return false;
+  // Unknown locations remain visible with a warning instead of being silently
+  // discarded. Recruitment announcements often omit the city in the excerpt.
+  if (instructions.locations.length && job.location && !containsAny(job.location, instructions.locations)) return false;
   if (instructions.excludedKeywords.length && containsAny(text, instructions.excludedKeywords)) return false;
   if (job.publishedAt) {
     const published = Date.parse(`${job.publishedAt}T00:00:00+08:00`);
@@ -72,7 +74,13 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
     for (const query of instructions.queries) {
       onProgress(`正在从${provider.name}搜索“${query}”…`);
       try {
-        const output = await provider.search({ query, page: 1, pageSize: 100 });
+        const output = await provider.search({
+          query,
+          graduationYear: profile.preferences.graduationYear,
+          recentDays: instructions.recentDays,
+          page: 1,
+          pageSize: 100,
+        });
         fetched += output.jobs.length;
         summaries.push(...output.jobs.map((job) => ({ ...job, provider })));
       } catch (error) {

@@ -1,5 +1,6 @@
 import { createCompanyProvider } from "./company-careers.js";
 import { fetchTencentJobDetail, tencentProvider } from "./tencent.js";
+import { createWechatProvider } from "./wechat.js";
 
 // Every entry must be verified from an official company recruitment entry point.
 // A source URL is configuration, not proof that an unsupported ATS works.
@@ -21,4 +22,8 @@ export function createOfficialProviders(fetchImpl = fetch) {
     },
     ...OFFICIAL_COMPANY_SOURCES.filter((source) => source.enabled).map((source) => createCompanyProvider(source, fetchImpl)),
   ];
+}
+
+export function createDiscoveryProviders(fetchImpl = fetch) {
+  return [...createOfficialProviders(fetchImpl), createWechatProvider(fetchImpl)];
 }

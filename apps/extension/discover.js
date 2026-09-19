@@ -1,7 +1,7 @@
 import { createApplicationRecord, upsertApplication } from "./shared/applications.js";
 import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
-import { createOfficialProviders } from "./shared/providers/sources.js";
+import { createDiscoveryProviders } from "./shared/providers/sources.js";
 import { loadApplications, loadDiscovery, loadProfile, saveApplications, saveDiscovery } from "./shared/storage.js";
 
 const form = document.querySelector("#search-form");
@@ -42,8 +42,12 @@ function renderResults(output) {
     card.querySelector(".score strong").textContent = entry.assessment.score;
     list(card.querySelector(".strengths"), entry.assessment.strengths.slice(0, 3), "暂未发现明确优势");
     list(card.querySelector(".gaps"), [...entry.assessment.gaps, ...entry.assessment.warnings].slice(0, 3), "没有明显提醒");
+    const sourceKind = card.querySelector(".source-kind");
+    sourceKind.textContent = entry.job.sourceType === "wechat-article" ? "公众号招聘信息" : "企业官网岗位";
+    sourceKind.classList.toggle("unverified", !entry.job.sourceVerified);
     const link = card.querySelector(".job-link");
     link.href = entry.job.sourceUrl;
+    link.textContent = entry.job.sourceType === "wechat-article" ? "查看原始文章" : "查看官方岗位";
     const shortlist = card.querySelector(".shortlist");
     const existing = applications.some((item) => item.jobId === entry.job.id);
     if (existing) {
@@ -86,7 +90,7 @@ form.addEventListener("submit", async (event) => {
     const output = await discoverJobs({
       profile,
       instructions: readInstructions(),
-      providers: createOfficialProviders(),
+      providers: createDiscoveryProviders(),
       onProgress: (message) => { statusElement.textContent = message; },
     });
     discovery = await saveDiscovery(output);
