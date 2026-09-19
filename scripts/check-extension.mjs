@@ -14,6 +14,7 @@ for (const permission of manifest.permissions ?? []) {
 for (const path of [
   "options.html", "options.js", "options.css", "popup.html", "popup.js", "popup.css",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
+  "shared/form-mapping.js", "shared/applications.js",
 ]) {
   await access(new URL(path, root));
 }

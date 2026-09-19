@@ -1,11 +1,14 @@
 import { analyzeJob } from "./shared/matcher.js";
-import { extractJobFromPage } from "./shared/page-actions.js";
+import { createApplicationRecord, markApplicationSubmitted, upsertApplication } from "./shared/applications.js";
+import { buildAutofillPayload, SENSITIVE_LABELS } from "./shared/form-mapping.js";
+import { extractJobFromPage, fillGenericForm } from "./shared/page-actions.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createResumeVariant } from "./shared/resume.js";
-import { loadDraft, loadProfile, saveDraft } from "./shared/storage.js";
+import { loadApplications, loadDraft, loadProfile, saveApplications, saveDraft } from "./shared/storage.js";
 
 let profile;
 let draft;
+let applications;
 
 const elements = Object.fromEntries([
   "onboarding", "start-panel", "result-panel", "resume-panel", "job-company", "job-title", "job-meta",
@@ -89,11 +92,43 @@ async function downloadResume() {
   setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
 }
 
+async function fillCurrentForm() {
+  const tab = await activeTab();
+  const payload = { ...buildAutofillPayload(profile), sensitiveLabels: SENSITIVE_LABELS };
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: fillGenericForm,
+    args: [payload],
+  });
+  const message = `已填写 ${result.filled.length} 项；跳过 ${result.skipped.length} 项；需人工处理 ${result.review.length} 项。`;
+  showStatus(message, result.review.length ? "" : "success");
+}
+
+async function saveApplication(status = "prepared") {
+  if (!draft?.assessment) throw new Error("请先分析岗位");
+  const existing = applications.find((item) => item.jobId === draft.assessment.job.id);
+  let record = existing
+    ? { ...existing, score: draft.assessment.score, resumeVariantId: draft.resumeVariant?.id ?? existing.resumeVariantId, status }
+    : createApplicationRecord(draft, status);
+  if (status === "submitted") record = markApplicationSubmitted(record);
+  applications = upsertApplication(applications, record);
+  await saveApplications(applications);
+  draft.applicationId = applications.find((item) => item.jobId === draft.assessment.job.id)?.id;
+  await saveDraft(draft);
+  showStatus(status === "submitted" ? "已标记为已投递。" : "已保存到本地投递台账。", "success");
+}
+
 document.querySelector("#open-options").addEventListener("click", openOptions);
 document.querySelector("#setup-profile").addEventListener("click", openOptions);
 document.querySelector("#analyze-job").addEventListener("click", () => analyzeCurrentPage().catch((error) => showStatus(`分析失败：${error.message}`, "error")));
 document.querySelector("#reanalyze").addEventListener("click", () => analyzeCurrentPage().catch((error) => showStatus(`分析失败：${error.message}`, "error")));
 document.querySelector("#generate-resume").addEventListener("click", () => generateResume().catch((error) => showStatus(`生成失败：${error.message}`, "error")));
+document.querySelector("#fill-form").addEventListener("click", () => fillCurrentForm().catch((error) => showStatus(`填写失败：${error.message}`, "error")));
+document.querySelector("#save-application").addEventListener("click", () => saveApplication().catch((error) => showStatus(`保存失败：${error.message}`, "error")));
+document.querySelector("#mark-submitted").addEventListener("click", () => {
+  if (!confirm("AutumnApply 不会代替你提交。请只在你已经检查网页并亲自完成提交后，标记为已投递。")) return;
+  saveApplication("submitted").catch((error) => showStatus(`更新失败：${error.message}`, "error"));
+});
 document.querySelector("#copy-resume").addEventListener("click", async () => {
   await navigator.clipboard.writeText(draft.resumeVariant.markdown);
   showStatus("已复制 Markdown 简历。", "success");
@@ -102,6 +137,7 @@ document.querySelector("#download-resume").addEventListener("click", () => downl
 
 profile = await loadProfile();
 draft = await loadDraft();
+applications = await loadApplications();
 if (!profileHasUsefulData(profile)) {
   elements.onboarding.classList.remove("hidden");
   elements["start-panel"].classList.add("hidden");

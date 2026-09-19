@@ -39,3 +39,13 @@ export async function saveDraft(draft) {
   await storageArea().set({ [STORAGE_KEYS.draft]: draft });
   return draft;
 }
+
+export async function loadApplications() {
+  const result = await storageArea().get(STORAGE_KEYS.applications);
+  return Array.isArray(result[STORAGE_KEYS.applications]) ? result[STORAGE_KEYS.applications] : [];
+}
+
+export async function saveApplications(applications) {
+  await storageArea().set({ [STORAGE_KEYS.applications]: applications });
+  return applications;
+}

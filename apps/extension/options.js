@@ -1,5 +1,6 @@
 import { createEmptyProfile, newId, normalizeProfile, splitList, validateProfile } from "./shared/profile.js";
-import { clearLocalData, loadProfile, saveProfile } from "./shared/storage.js";
+import { STATUS_LABELS } from "./shared/applications.js";
+import { clearLocalData, loadApplications, loadProfile, saveProfile } from "./shared/storage.js";
 
 const form = document.querySelector("#profile-form");
 const status = document.querySelector("#save-status");
@@ -117,6 +118,41 @@ function renderProfile(profile) {
   renderEmptyState(lists.commonAnswers, "可保存自我介绍、求职动机等常见答案素材。");
 }
 
+function renderApplications(applications) {
+  const rows = document.querySelector("#application-rows");
+  const empty = document.querySelector("#application-empty");
+  rows.replaceChildren();
+  empty.hidden = applications.length > 0;
+  for (const application of applications) {
+    const row = document.createElement("tr");
+    const jobCell = document.createElement("td");
+    const title = document.createElement("strong");
+    title.textContent = `${application.job.company} · ${application.job.title}`;
+    jobCell.append(title);
+    if (application.job.location) jobCell.append(document.createElement("br"), application.job.location);
+    const scoreCell = document.createElement("td");
+    scoreCell.textContent = String(application.score ?? "—");
+    const statusCell = document.createElement("td");
+    const pill = document.createElement("span");
+    pill.className = "status-pill";
+    pill.textContent = STATUS_LABELS[application.status] ?? application.status;
+    statusCell.append(pill);
+    const updatedCell = document.createElement("td");
+    updatedCell.textContent = new Date(application.updatedAt).toLocaleString();
+    const sourceCell = document.createElement("td");
+    if (application.job.sourceUrl) {
+      const link = document.createElement("a");
+      link.href = application.job.sourceUrl;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = application.job.sourcePlatform || "打开";
+      sourceCell.append(link);
+    } else sourceCell.textContent = "—";
+    row.append(jobCell, scoreCell, statusCell, updatedCell, sourceCell);
+    rows.append(row);
+  }
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const profile = collectProfile();
@@ -170,7 +206,9 @@ document.querySelector("#clear-data").addEventListener("click", async () => {
   if (!confirm("确定清除 AutumnApply 在当前浏览器保存的全部资料和投递记录吗？此操作无法撤销。")) return;
   await clearLocalData();
   renderProfile(createEmptyProfile());
+  renderApplications([]);
   showStatus("本机数据已清除", "success");
 });
 
 renderProfile(await loadProfile());
+renderApplications(await loadApplications());

@@ -47,6 +47,9 @@ button { border: 0; border-radius: 9px; padding: 0.68rem 0.9rem; cursor: pointer
 ul { margin: 0; padding-left: 1.1rem; color: #4e5a52; font-size: 0.75rem; line-height: 1.5; }
 .actions { display: flex; gap: 0.6rem; margin-top: 0.8rem; }
 .actions button { flex: 1; }
+.actions.compact { align-items: center; }
+.actions.compact button { padding: 0.55rem 0.45rem; font-size: 0.72rem; }
+.text-button { color: var(--muted); background: transparent; }
 .section-title { display: flex; justify-content: space-between; gap: 0.5rem; }
 .safe-chip { align-self: flex-start; padding: 0.3rem 0.5rem; border-radius: 999px; color: var(--green-dark); background: #e4ede7; font-size: 0.68rem; white-space: nowrap; }
 #resume-preview { width: 100%; height: 220px; padding: 0.7rem; border: 1px solid var(--line); border-radius: 9px; background: #faf9f4; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; line-height: 1.5; }
