@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "AutumnApply",
+  "version": "0.1.0",
+  "description": "本地优先的中国校招求职助手。",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "scripting",
+    "storage"
+  ],
+  "action": {
+    "default_title": "AutumnApply"
+  },
+  "options_page": "options.html"
+}
