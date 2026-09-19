@@ -1,0 +1,28 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Local secrets and candidate data
+.env
+.env.*
+!.env.example
+data/
+private/
+*.sqlite
+*.sqlite3
+
+# Generated application material
+output/
+generated/
+
+# Browser sessions and authentication state
+userdata/
+playwright/.auth/
+storage-state.json
+
+# Editors
+.idea/
+.vscode/
+*.swp
