@@ -71,6 +71,29 @@ async function mapWithConcurrency(items, limit, mapper) {
   return results;
 }
 
+function selectFairCandidates(jobs, limit) {
+  const groups = new Map();
+  for (const job of jobs) {
+    const providerId = job.provider?.id ?? "unknown";
+    if (!groups.has(providerId)) groups.set(providerId, []);
+    groups.get(providerId).push(job);
+  }
+  const queues = [...groups.values()];
+  const selected = [];
+  for (let index = 0; selected.length < limit; index += 1) {
+    let added = false;
+    for (const queue of queues) {
+      if (queue[index]) {
+        selected.push(queue[index]);
+        added = true;
+        if (selected.length === limit) break;
+      }
+    }
+    if (!added) break;
+  }
+  return selected;
+}
+
 export async function discoverJobs({ profile, instructions: rawInstructions, providers, onProgress = () => {} }) {
   const instructions = normalizeDiscoveryInstructions(rawInstructions, profile);
   if (!instructions.queries.length) throw new Error("请至少提供一个目标岗位或搜索关键词");
@@ -129,9 +152,12 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
     sourceStats.push({ id: provider.id, name: provider.name, fetched });
   }
 
-  const deduplicated = [...new Map(summaries.map((job) => [job.id, job])).values()]
-    .filter((job) => passesSummaryFilter(job, instructions))
-    .slice(0, Math.min(40, Math.max(instructions.maxResults * 2, 15)));
+  const candidateLimit = Math.min(40, Math.max(instructions.maxResults * 2, 15));
+  const deduplicated = selectFairCandidates(
+    [...new Map(summaries.map((job) => [job.id, job])).values()]
+      .filter((job) => passesSummaryFilter(job, instructions)),
+    candidateLimit,
+  );
 
   onProgress(`正在读取 ${deduplicated.length} 个岗位的任职要求…`);
   const detailed = await mapWithConcurrency(deduplicated, 4, async (job) => {

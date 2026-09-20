@@ -116,3 +116,33 @@ test("high-quality WeChat clues remain visible when the excerpt only signals the
   assert.match(output.results[0].assessment.strengths.join(" "), /公众号检索词命中/);
   assert.equal(output.sourceStats[0].searchedQueries, 1);
 });
+
+test("candidate enrichment gives later providers a fair share of the budget", async () => {
+  const provider = (id, count) => ({
+    id,
+    name: id,
+    search: async () => ({
+      jobs: Array.from({ length: count }, (_, index) => ({
+        id: `${id}-${index}`,
+        providerId: `${id}-${index}`,
+        title: "数据分析校招",
+        company: `${id}公司`,
+        location: "上海",
+      })),
+    }),
+    detail: async (job) => ({
+      ...job,
+      sourceUrl: `https://example.com/${job.id}`,
+      sourcePlatform: id,
+      description: "2027届校园招聘，本科及以上，要求 Python、SQL 和数据分析。",
+    }),
+  });
+
+  const output = await discoverJobs({
+    profile,
+    instructions: { queries: "数据分析", maxResults: 10 },
+    providers: [provider("first", 50), provider("later", 1)],
+  });
+
+  assert.ok(output.results.some(({ job }) => job.id === "later-0"));
+});
