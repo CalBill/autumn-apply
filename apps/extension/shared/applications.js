@@ -104,11 +104,37 @@ export function recordSubmissionAttempt(record) {
   };
 }
 
+function normalizedJobUrl(value) {
+  try {
+    const url = new URL(String(value ?? ""));
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(utm_.+|from|ref|referer|channel|campaign)$/i.test(key)) url.searchParams.delete(key);
+    }
+    url.searchParams.sort();
+    url.pathname = url.pathname.replace(/\/$/, "") || "/";
+    return url.toString();
+  } catch {
+    return String(value ?? "").trim();
+  }
+}
+
+function comparable(value) {
+  return String(value ?? "").toLocaleLowerCase().replace(/[\s·|_-]/g, "");
+}
+
 export function findApplicationForJob(records, job) {
-  const sourceUrl = String(job?.sourceUrl ?? "").replace(/[#?].*$/, "").replace(/\/$/, "");
-  return records.find((item) => {
+  const sourceUrl = normalizedJobUrl(job?.sourceUrl);
+  const exact = records.find((item) => {
     if (item.jobId === job?.id) return true;
-    const candidateUrl = String(item.job?.sourceUrl ?? "").replace(/[#?].*$/, "").replace(/\/$/, "");
+    const candidateUrl = normalizedJobUrl(item.job?.sourceUrl);
     return Boolean(sourceUrl && candidateUrl && sourceUrl === candidateUrl);
+  });
+  if (exact) return exact;
+  return records.find((item) => {
+    const sameTitle = comparable(item.job?.title) && comparable(item.job?.title) === comparable(job?.title);
+    const sameCompany = comparable(item.job?.company) && comparable(item.job?.company) === comparable(job?.company);
+    const locations = [comparable(item.job?.location), comparable(job?.location)];
+    return sameTitle && sameCompany && (!locations[0] || !locations[1] || locations[0] === locations[1]);
   });
 }

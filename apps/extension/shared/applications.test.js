@@ -48,6 +48,14 @@ test("applications can be matched to a job by normalized source URL", () => {
   assert.equal(findApplicationForJob([record], { id: "new", sourceUrl: "https://example.com/job/1#apply" }), record);
 });
 
+test("job identifiers in query parameters are preserved during deduplication", () => {
+  const record = createApplicationRecord({
+    assessment: { job: { id: "old", sourceUrl: "https://example.com/jobs?jobId=123&utm_source=test" }, score: 70 },
+  });
+  assert.equal(findApplicationForJob([record], { id: "new", sourceUrl: "https://example.com/jobs?jobId=123" }), record);
+  assert.equal(findApplicationForJob([record], { id: "other", sourceUrl: "https://example.com/jobs?jobId=456" }), undefined);
+});
+
 test("preparation questions expose missing evidence before a job is ready", () => {
   const assessment = {
     job: { id: "job-2", title: "合规岗", description: "要求英语六级，并优先考虑中共党员" },
