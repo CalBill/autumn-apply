@@ -10,7 +10,7 @@ const requiredFiles = [
   "docs/architecture.md",
   "docs/getting-started.zh-CN.md",
   "docs/roadmap.md",
-  "packages/contracts/src/index.ts",
+  "scripts/check-syntax.mjs",
 ];
 
 await Promise.all(requiredFiles.map((path) => access(path)));

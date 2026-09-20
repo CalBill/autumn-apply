@@ -64,15 +64,9 @@ AutumnApply 不会填写密码、验证码、身份证、银行、薪资和法�
 
 ```text
 apps/
-  extension/       浏览器扩展：读取岗位页面、填写表单
+  extension/       浏览器扩展：工作台、岗位搜索、申请准备与安全填表
   api/             本地 API：解析、匹配、生成文档
-  dashboard/       本地投递看板
-packages/
-  contracts/       各模块共享的数据契约
-  form-engine/     通用表单识别与填写
-  job-parser/      岗位页面解析与标准化
-  matcher/         硬条件过滤与匹配评分
-  resume-tailor/   基于事实的简历定制
+scripts/           构建、启动与仓库检查脚本
 docs/
   getting-started.zh-CN.md  Windows / macOS 安装与使用指南
   architecture.md  系统设计和安全边界
@@ -102,7 +96,6 @@ npm run launch
 npm install
 npm run start:api
 npm run check
-npm run typecheck
 npm test
 npm run build
 ```
