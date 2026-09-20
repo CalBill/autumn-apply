@@ -62,9 +62,20 @@
 - [ ] Interview-stage tracking
 - [ ] Export and encrypted backup
 
+## Milestone 3.5 — Usability v0.6
+
+- [x] One-click macOS launcher for build, local API and extension setup
+- [x] Guided onboarding and unified local dashboard
+- [x] DOCX resume export and PDF-ready print view
+- [x] Saved basic searches with new-job and seven-day deadline alerts
+- [x] Recruitment-platform detection and conservative capability reporting
+- [x] Per-run form-fill report, recoverable snapshot and local audit trail
+- [ ] Signed desktop installer and automatic extension installation
+- [ ] Dedicated multi-step Beisen and Moka application adapters
+
 ## Milestone 4 — Assisted batches
 
 - [x] User-approved apply / skip decisions
 - [ ] Batch preparation with per-job review
-- [ ] Failure recovery and audit log
+- [x] Failure recovery and audit log
 - [ ] Rate limits and platform-policy controls

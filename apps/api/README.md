@@ -18,6 +18,8 @@ Current endpoints:
 - `POST /v1/ai/resumes/structure`
 - `POST /v1/ai/match`
 - `POST /v1/ai/search` (OpenAI only)
+- `POST /v1/ai/application-package`
+- `POST /v1/documents/docx`
 
 PDF, DOCX, TXT and Markdown files are parsed locally. The service rejects payloads over 22 MB and resume files over 15 MB. Browser requests are accepted only from Chrome extensions and localhost origins.
 
@@ -28,3 +30,5 @@ OpenAI and DeepSeek use their official Responses-compatible endpoints. Requests 
 Resume AI structuring is an explicit second step after local text extraction. Semantic job matching strips the candidate's name, email, phone and links before sending education, experience, skills and preferences to the configured provider. Both workflows use strict JSON schemas and label missing evidence as unknown instead of guessing.
 
 AI web discovery uses OpenAI's hosted `web_search` tool only after an explicit click. Returned URLs must appear in the tool's cited sources, resolve to public HTTPS addresses, and pass a separate reachability/content-signal check. Private-network, localhost, credential-bearing and non-HTTPS URLs are rejected. DeepSeek remains available for structuring and matching but is not presented as having hosted web search.
+
+The DOCX endpoint receives an already reviewed profile and resume variant, then returns a base64-encoded Word document. It does not contact an external model. PDF export is implemented in the extension as a print view so the user can inspect the document before choosing **Save as PDF**.
