@@ -8,6 +8,7 @@ const requiredFiles = [
   "SECURITY.md",
   "THIRD_PARTY_NOTICES.md",
   "docs/architecture.md",
+  "docs/getting-started.zh-CN.md",
   "docs/roadmap.md",
   "packages/contracts/src/index.ts",
 ];

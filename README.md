@@ -13,6 +13,8 @@ AutumnApply 的目标是把重复劳动自动化，同时把事实核对、隐�
 
 > 当前版本为 v0.6 可用性版本。它已经连接“导入—搜索—决策—准备—导出—填写—提交权限—跟踪”，但复杂招聘平台仍需要持续增加专用适配器。
 
+> **第一次使用？** 请直接阅读 [Windows / macOS 安装与使用指南](docs/getting-started.zh-CN.md)。
+
 ## v0.6 已经能做什么
 
 - 在 macOS 或 Windows 双击对应启动器，自动安装所需依赖、构建扩展、启动本机服务并打开 Chrome 扩展管理页；
@@ -72,15 +74,16 @@ packages/
   matcher/         硬条件过滤与匹配评分
   resume-tailor/   基于事实的简历定制
 docs/
+  getting-started.zh-CN.md  Windows / macOS 安装与使用指南
   architecture.md  系统设计和安全边界
   roadmap.md       分阶段开发计划
 ```
 
-## 开发
+## 快速开始
 
 要求 Node.js 20 或更高版本。
 
-macOS 首次使用可以双击仓库根目录的 `AutumnApply.command`；Windows 可以双击 `AutumnApply.cmd`。启动器会检查 Node.js 20、在需要时安装依赖、构建扩展、启动只监听本机的 API，并打开 Chrome 扩展管理页与待加载的扩展目录。Windows 会检查系统级与当前用户级 Chrome 安装；若未找到，会打开扩展目录并提示用户手动进入 `chrome://extensions`。
+macOS 首次使用可以双击仓库根目录的 `AutumnApply.command`；Windows 可以双击 `AutumnApply.cmd`。启动器会确认 Node.js 可用（Windows 同时检查主版本）、在需要时安装依赖、构建扩展、启动只监听本机的 API，并打开 Chrome 扩展管理页与待加载的扩展目录。Windows 会检查系统级与当前用户级 Chrome 安装；若未找到，会打开扩展目录并提示用户手动进入 `chrome://extensions`。
 
 两个平台的命令行等价方式都是：
 
@@ -88,6 +91,10 @@ macOS 首次使用可以双击仓库根目录的 `AutumnApply.command`；Windows
 npm install
 npm run launch
 ```
+
+首次启动后仍需在 `chrome://extensions` 开启开发者模式，并手动加载 `dist/extension`。完整的首次安装、日常启动、更新、AI 配置与故障排查步骤见 [安装与使用指南](docs/getting-started.zh-CN.md)。
+
+## 开发与验证
 
 开发和验证命令：
 

@@ -15,7 +15,7 @@ The extension stores profile data with `chrome.storage.local` and does not reque
 
 ## Current workflow
 
-1. Double-click `AutumnApply.command` on macOS, or run `npm run launch`, then load `dist/extension` when Chrome asks on first use.
+1. Double-click `AutumnApply.command` on macOS or `AutumnApply.cmd` on Windows, or run `npm run launch`, then load `dist/extension` when Chrome asks on first use. See the [Chinese installation and usage guide](../../docs/getting-started.zh-CN.md) for detailed platform-specific steps.
 2. Open **工作台**, follow the onboarding checklist, and save a candidate profile; optionally import a PDF/DOCX resume or configure BYOK AI.
 3. Open **找岗位**, refine role/location/required/excluded instructions, optionally add priority WeChat account/company terms, and search supported official career systems and public WeChat clues.
 4. Optionally run privacy-minimized AI matching or OpenAI hosted web discovery with source verification.
