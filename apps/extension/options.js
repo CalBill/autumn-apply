@@ -1,6 +1,7 @@
 import { createEmptyProfile, newId, normalizeProfile, splitList, validateProfile } from "./shared/profile.js";
 import { STATUS_LABELS } from "./shared/applications.js";
 import { clearLocalData, loadApplications, loadProfile, saveProfile } from "./shared/storage.js";
+import { deleteProviderKey, getLocalApiHealth, getProviderSettings, parseResumeFile, saveProviderSettings } from "./shared/local-api.js";
 
 const form = document.querySelector("#profile-form");
 const status = document.querySelector("#save-status");
@@ -214,3 +215,77 @@ document.querySelector("#clear-data").addEventListener("click", async () => {
 
 renderProfile(await loadProfile());
 renderApplications(await loadApplications());
+
+const localApiStatus = document.querySelector("#local-api-status");
+const providerForm = document.querySelector("#provider-form");
+const providerStatus = document.querySelector("#provider-status");
+
+function showIntegrationStatus(element, message, kind = "") {
+  element.textContent = message;
+  element.className = kind;
+}
+
+async function refreshProviderSettings() {
+  const settings = await getProviderSettings();
+  providerForm.elements.provider.value = settings.provider;
+  providerForm.elements.model.value = settings.model;
+  showIntegrationStatus(providerStatus, settings.apiKeyConfigured
+    ? `已配置密钥（${settings.apiKeySource === "environment" ? "环境变量" : "系统钥匙串"}）`
+    : "尚未配置API Key", settings.apiKeyConfigured ? "success" : "");
+}
+
+try {
+  const health = await getLocalApiHealth();
+  showIntegrationStatus(localApiStatus, `本机服务在线 · v${health.version}`, "online");
+  await refreshProviderSettings();
+} catch (error) {
+  showIntegrationStatus(localApiStatus, error.message, "offline");
+  providerForm.querySelectorAll("input, select, button").forEach((element) => { element.disabled = true; });
+}
+
+document.querySelector("#resume-import").addEventListener("change", async (event) => {
+  const [file] = event.target.files;
+  const importStatus = document.querySelector("#resume-import-status");
+  if (!file) return;
+  try {
+    showIntegrationStatus(importStatus, "正在本机解析简历…");
+    const result = await parseResumeFile(file);
+    const draft = result.profileDraft;
+    for (const [name, value] of Object.entries(draft.personal)) {
+      const input = form.elements.namedItem(name);
+      if (input && !input.value && value) input.value = value;
+    }
+    const existingSkills = splitList(form.elements.namedItem("skills").value);
+    form.elements.namedItem("skills").value = [...new Set([...existingSkills, ...draft.skills])].join("、");
+    if (!form.elements.namedItem("graduationYear").value) {
+      form.elements.namedItem("graduationYear").value = draft.yearSignals.at(-1) ?? "";
+    }
+    showIntegrationStatus(importStatus, `已提取 ${result.text.length} 个字符；请核对后点击“保存资料”`, "success");
+  } catch (error) {
+    showIntegrationStatus(importStatus, error.message, "error");
+  } finally {
+    event.target.value = "";
+  }
+});
+
+providerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(providerForm);
+  try {
+    const settings = await saveProviderSettings(Object.fromEntries(data.entries()));
+    providerForm.elements.apiKey.value = "";
+    showIntegrationStatus(providerStatus, settings.apiKeyConfigured ? "AI配置已保存，密钥位于安全存储" : "配置已保存，但尚未提供密钥", settings.apiKeyConfigured ? "success" : "");
+  } catch (error) {
+    showIntegrationStatus(providerStatus, error.message, "error");
+  }
+});
+
+document.querySelector("#delete-provider-key").addEventListener("click", async () => {
+  try {
+    await deleteProviderKey();
+    providerForm.elements.apiKey.value = "";
+    showIntegrationStatus(providerStatus, "密钥已从安全存储删除", "success");
+  } catch (error) {
+    showIntegrationStatus(providerStatus, error.message, "error");
+  }
+});

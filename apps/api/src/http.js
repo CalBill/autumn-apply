@@ -1,5 +1,6 @@
 import http from "node:http";
 import { parseResumeBuffer } from "./resume-parser.js";
+import { createProviderSettingsStore } from "./provider-settings.js";
 
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_PORT = 43127;
@@ -44,7 +45,7 @@ function decodeBase64(value) {
   return buffer;
 }
 
-export function createLocalApiServer({ parseResume = parseResumeBuffer } = {}) {
+export function createLocalApiServer({ parseResume = parseResumeBuffer, settings = createProviderSettingsStore() } = {}) {
   return http.createServer(async (request, response) => {
     const origin = request.headers.origin ?? "";
     if (!allowedOrigin(origin)) {
@@ -78,6 +79,18 @@ export function createLocalApiServer({ parseResume = parseResumeBuffer } = {}) {
           mimeType: String(body.mimeType || ""),
         });
         writeJson(response, 200, result, origin);
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/v1/settings/provider") {
+        writeJson(response, 200, await settings.status(), origin);
+        return;
+      }
+      if (request.method === "PUT" && url.pathname === "/v1/settings/provider") {
+        writeJson(response, 200, await settings.update(await readJson(request)), origin);
+        return;
+      }
+      if (request.method === "DELETE" && url.pathname === "/v1/settings/provider/key") {
+        writeJson(response, 200, await settings.removeKey(), origin);
         return;
       }
       writeJson(response, 404, { error: "接口不存在" }, origin);

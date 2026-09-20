@@ -3,7 +3,12 @@ import test from "node:test";
 import { createLocalApiServer, listen } from "../src/http.js";
 
 async function withServer(parseResume, callback) {
-  const server = createLocalApiServer({ parseResume });
+  const settings = {
+    status: async () => ({ provider: "openai", model: "test", apiKeyConfigured: false }),
+    update: async (value) => ({ provider: value.provider, model: value.model, apiKeyConfigured: Boolean(value.apiKey) }),
+    removeKey: async () => ({ provider: "openai", model: "test", apiKeyConfigured: false }),
+  };
+  const server = createLocalApiServer({ parseResume, settings });
   const address = await listen(server, { port: 0 });
   try {
     await callback(`http://127.0.0.1:${address.port}`);
@@ -37,5 +42,18 @@ test("browser origins outside the extension and localhost are rejected", async (
   await withServer(undefined, async (baseUrl) => {
     const response = await fetch(`${baseUrl}/health`, { headers: { Origin: "https://malicious.example" } });
     assert.equal(response.status, 403);
+  });
+});
+
+test("provider settings expose status but never echo the API key", async () => {
+  await withServer(undefined, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/v1/settings/provider`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: "deepseek", model: "deepseek-flash", apiKey: "secret-value" }),
+    });
+    const body = await response.json();
+    assert.equal(body.apiKeyConfigured, true);
+    assert.equal(body.apiKey, undefined);
   });
 });

@@ -17,6 +17,33 @@
     </header>
 
     <main>
+      <section class="panel">
+        <div class="section-heading">
+          <div><span>00</span><h2>简历导入与AI服务</h2></div>
+          <p id="local-api-status">正在检查本机服务…</p>
+        </div>
+        <div class="grid two">
+          <div class="integration-card">
+            <h3>导入简历</h3>
+            <p>PDF、DOCX、TXT和Markdown只发送到本机服务。识别结果只补充空白字段，不覆盖现有资料。</p>
+            <label class="secondary file-button">选择简历<input id="resume-import" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" /></label>
+            <p id="resume-import-status" role="status"></p>
+          </div>
+          <form id="provider-form" class="integration-card">
+            <h3>BYOK AI增强</h3>
+            <p>密钥交给本机服务并存入macOS钥匙串；浏览器不会读取或显示密钥。</p>
+            <label>服务商<select name="provider"><option value="openai">OpenAI</option><option value="deepseek">DeepSeek</option></select></label>
+            <label>模型<input name="model" placeholder="gpt-5.6-luna" /></label>
+            <label>API Key<input name="apiKey" type="password" autocomplete="off" placeholder="仅在新增或更换时填写" /></label>
+            <div class="button-row">
+              <button class="primary" type="submit">保存AI配置</button>
+              <button id="delete-provider-key" class="danger" type="button">删除密钥</button>
+            </div>
+            <p id="provider-status" role="status"></p>
+          </form>
+        </div>
+      </section>
+
       <form id="profile-form">
         <section class="panel">
           <div class="section-heading">

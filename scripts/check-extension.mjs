@@ -31,6 +31,7 @@ for (const path of [
   "discover.html", "discover.js", "discover.css",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
+  "shared/local-api.js",
   "shared/discovery.js", "shared/providers/tencent.js", "shared/providers/company-careers.js", "shared/providers/wechat.js", "shared/providers/sources.js",
 ]) {
   await access(new URL(path, root));
