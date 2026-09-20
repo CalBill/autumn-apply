@@ -1,13 +1,26 @@
 {
   "manifest_version": 3,
   "name": "AutumnApply",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "本地优先的中国校招求职助手。",
   "permissions": [
     "activeTab",
     "downloads",
     "scripting",
     "storage"
+  ],
+  "host_permissions": [
+    "https://careers.tencent.com/*",
+    "https://zhaopin.meituan.com/*",
+    "https://app.mokahr.com/*",
+    "https://jobs.bytedance.com/*",
+    "https://*.jobs.feishu.cn/*",
+    "https://boards-api.greenhouse.io/*",
+    "https://api.lever.co/*",
+    "https://api.eu.lever.co/*",
+    "https://api.ashbyhq.com/*",
+    "https://weixin.sogou.com/*",
+    "http://127.0.0.1:43127/*"
   ],
   "action": {
     "default_title": "AutumnApply",

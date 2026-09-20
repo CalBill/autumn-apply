@@ -54,6 +54,30 @@ export function createResumeVariant(profile, assessment) {
   return { ...variant, markdown: renderResumeMarkdown(profile, variant) };
 }
 
+export function createAiResumeVariant(profile, assessment, aiPackage) {
+  const variant = createResumeVariant(profile, assessment);
+  const applyRewrites = (items, rewrites = []) => {
+    const bySource = new Map(rewrites.map((item) => [item.sourceId, item]));
+    return items.map((item) => {
+      const rewrite = bySource.get(item.sourceId);
+      if (!rewrite?.bullets?.length) return item;
+      return {
+        ...item,
+        bullets: rewrite.bullets.map((text) => ({ text, sourceId: item.sourceId, requiresReview: true })),
+        aiRationale: rewrite.rationale,
+      };
+    });
+  };
+  variant.id = `resume-${simpleHash(`${profile.id}|${assessment.job.id}|ai|${Date.now()}`)}`;
+  variant.mode = "ai";
+  variant.aiSummary = aiPackage.summary;
+  variant.warnings = aiPackage.warnings ?? [];
+  variant.sections.experiences = applyRewrites(variant.sections.experiences, aiPackage.experiences);
+  variant.sections.projects = applyRewrites(variant.sections.projects, aiPackage.projects);
+  variant.markdown = renderResumeMarkdown(profile, variant);
+  return variant;
+}
+
 export function renderResumeMarkdown(profile, variant) {
   const lines = [
     `# ${profile.personal.fullName}`,

@@ -4,6 +4,8 @@ export const STORAGE_KEYS = {
   profile: "candidateProfile",
   applications: "applications",
   draft: "currentDraft",
+  discovery: "lastDiscovery",
+  companySources: "companySources",
 };
 
 function storageArea() {
@@ -48,4 +50,27 @@ export async function loadApplications() {
 export async function saveApplications(applications) {
   await storageArea().set({ [STORAGE_KEYS.applications]: applications });
   return applications;
+}
+
+export async function loadDiscovery() {
+  const result = await storageArea().get(STORAGE_KEYS.discovery);
+  return result[STORAGE_KEYS.discovery] ?? null;
+}
+
+export async function saveDiscovery(discovery) {
+  await storageArea().set({ [STORAGE_KEYS.discovery]: discovery });
+  return discovery;
+}
+
+export async function loadCompanySources() {
+  const result = await storageArea().get(STORAGE_KEYS.companySources);
+  return Array.isArray(result[STORAGE_KEYS.companySources]) ? result[STORAGE_KEYS.companySources] : [];
+}
+
+export async function saveCompanySources(sources) {
+  const normalized = Array.isArray(sources)
+    ? sources.map(({ id, name, url }) => ({ id: String(id), name: String(name), url: String(url), enabled: true }))
+    : [];
+  await storageArea().set({ [STORAGE_KEYS.companySources]: normalized });
+  return normalized;
 }

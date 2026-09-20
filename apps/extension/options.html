@@ -17,6 +17,36 @@
     </header>
 
     <main>
+      <section class="panel">
+        <div class="section-heading">
+          <div><span>00</span><h2>简历导入与AI服务</h2></div>
+          <p id="local-api-status">正在检查本机服务…</p>
+        </div>
+        <div class="grid two">
+          <div class="integration-card">
+            <h3>导入简历</h3>
+            <p>PDF、DOCX、TXT和Markdown只发送到本机服务。识别结果只补充空白字段，不覆盖现有资料。</p>
+            <label class="secondary file-button">选择简历<input id="resume-import" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" /></label>
+            <button id="ai-structure-resume" class="secondary" type="button" disabled>使用AI进一步结构化</button>
+            <small>点击AI结构化后，提取出的简历文本会发送给你配置的模型服务；不会发送原始文件。</small>
+            <p id="resume-import-status" role="status"></p>
+          </div>
+          <form id="provider-form" class="integration-card">
+            <h3>BYOK AI增强</h3>
+            <p>密钥交给本机服务并存入macOS钥匙串；浏览器不会读取或显示密钥。</p>
+            <label>服务商<select name="provider"><option value="openai">OpenAI</option><option value="deepseek">DeepSeek</option></select></label>
+            <label>模型<input name="model" placeholder="gpt-5.6-luna" /></label>
+            <label>API Key<input name="apiKey" type="password" autocomplete="off" placeholder="仅在新增或更换时填写" /></label>
+            <div class="button-row">
+              <button class="primary" type="submit">保存AI配置</button>
+              <button id="test-provider" class="secondary" type="button">测试连接</button>
+              <button id="delete-provider-key" class="danger" type="button">删除密钥</button>
+            </div>
+            <p id="provider-status" role="status"></p>
+          </form>
+        </div>
+      </section>
+
       <form id="profile-form">
         <section class="panel">
           <div class="section-heading">
@@ -65,8 +95,19 @@
             <label>技能关键词<textarea name="skills" rows="4" placeholder="Python、SQL、数据分析"></textarea></label>
             <label>目标岗位<textarea name="roles" rows="4" placeholder="数据分析师、产品经理"></textarea></label>
             <label>目标城市<input name="locations" placeholder="上海、北京、深圳" /></label>
+            <label>行业偏好<input name="industries" placeholder="金融、航运、石油、海油" /></label>
+            <label>企业性质偏好<input name="companyTypes" placeholder="国企、央企、涉外企业" /></label>
+            <label>必须条件<input name="requiredKeywords" placeholder="校招、管培生" /></label>
+            <label>排除条件<input name="excludedKeywords" placeholder="销售、外包、两年以上全职经验" /></label>
             <label>毕业年份<input name="graduationYear" inputmode="numeric" placeholder="2027" /></label>
+            <label>全职工作年限<input name="experienceYears" type="number" min="0" max="50" step="0.5" /><small>不含实习；应届生填写 0。</small></label>
             <label>最低匹配分数<input name="minimumScore" type="number" min="0" max="100" /></label>
+            <label class="check-label"><input name="campusOnly" type="checkbox" />只寻找校招／应届生岗位</label>
+          </div>
+          <div class="grid three qualification-grid">
+            <label>政治面貌<input name="politicalStatus" placeholder="中共党员／共青团员／群众" /></label>
+            <label>证书<input name="certificates" placeholder="法律职业资格A证、CPA" /></label>
+            <label>语言能力<input name="languages" placeholder="英语六级、雅思 7.0" /></label>
           </div>
         </section>
 

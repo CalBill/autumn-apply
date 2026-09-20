@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutumnApply · 岗位发现</title>
+    <link rel="stylesheet" href="discover.css" />
+  </head>
+  <body>
+    <header>
+      <div><p class="eyebrow">AUTUMNAPPLY · DISCOVERY</p><h1>寻找与你匹配的岗位</h1><p>根据本地资料和你的指示搜索公开岗位，读取要求并解释匹配度。</p></div>
+      <nav><a href="options.html">个人资料库</a></nav>
+    </header>
+
+    <main>
+      <aside>
+        <form id="search-form" class="panel">
+          <div class="source"><span></span><div><strong>多来源机会发现</strong><p>企业官网招聘系统 + 微信公众号招聘文章</p></div></div>
+          <label>搜索岗位<input name="queries" placeholder="数据分析、商业分析" /><small>留空时使用资料库中的目标岗位，最多三个方向。</small></label>
+          <label>工作地点<input name="locations" placeholder="上海、深圳" /></label>
+          <label>要求必须包含<input name="requiredKeywords" placeholder="实习、Python" /><small>详情中必须同时包含这些词。</small></label>
+          <label>排除关键词<input name="excludedKeywords" placeholder="高级、负责人、外包" /></label>
+          <label>额外企业官网来源<textarea name="companySources" rows="5" placeholder="公司名 | https://官方招聘入口"></textarea><small>每行一个。支持 Moka、飞书招聘、Greenhouse、Lever、Ashby；必须填写公司官网实际跳转到的招聘入口。</small></label>
+          <div class="grid">
+            <label>最低匹配分<input name="minimumScore" type="number" min="0" max="100" /></label>
+            <label>最多返回<input name="maxResults" type="number" min="1" max="30" /></label>
+            <label>最近天数<input name="recentDays" type="number" min="1" max="365" /></label>
+          </div>
+          <button id="search-button" class="primary" type="submit">开始寻找岗位</button>
+          <button id="ai-search-button" class="secondary" type="button">AI联网补充搜索</button>
+          <p class="boundary">基础搜索只读取公开信息，不发送个人资料。点击“AI深度分析”后，仅会发送教育、经历、技能和求职偏好，不发送姓名、邮箱或手机号。公众号结果会标注为待核验；验证码由用户处理，系统不会绕过。</p>
+        </form>
+      </aside>
+
+      <section class="results-column">
+        <div class="summary panel">
+          <div><p class="eyebrow">SEARCH RESULTS</p><h2 id="result-title">等待搜索</h2><p id="result-summary">填写指示后开始，系统会自动读取岗位详情并排序。</p></div>
+          <div id="search-status" role="status"></div>
+        </div>
+        <div id="errors" class="errors hidden"></div>
+        <div id="results" class="results"></div>
+        <div id="empty" class="empty panel">尚未搜索岗位。</div>
+      </section>
+    </main>
+
+    <template id="result-template">
+      <article class="job-card panel">
+        <div class="job-main">
+          <div><span class="source-kind"></span><p class="company"></p><h2 class="title"></h2><p class="meta"></p></div>
+          <div class="score"><strong></strong><span>匹配</span></div>
+        </div>
+        <div class="signals"><div><strong>优势</strong><ul class="strengths"></ul></div><div><strong>注意</strong><ul class="gaps"></ul></div></div>
+        <div class="ai-result hidden"><strong>AI语义匹配 · <span class="ai-score"></span></strong><p class="ai-summary"></p><ul class="ai-requirements"></ul></div>
+        <div class="job-actions"><a class="secondary job-link" target="_blank" rel="noreferrer">查看官方岗位</a><button class="secondary ai-match" type="button">AI深度分析</button></div>
+        <div class="decision-actions"><button class="primary apply-job" type="button">要投 · 准备材料</button><button class="skip-job" type="button">不投</button></div>
+      </article>
+    </template>
+
+    <script type="module" src="discover.js"></script>
+  </body>
+</html>

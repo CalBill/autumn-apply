@@ -23,6 +23,9 @@ export const FIELD_CATALOG = [
   { key: "graduationDate", labels: ["毕业时间", "预计毕业时间", "graduation date", "graduation"] },
   { key: "graduationYear", labels: ["毕业年份", "毕业年度", "graduation year"] },
   { key: "skills", labels: ["专业技能", "技能关键词", "技能特长", "technical skills", "skills", "技能"] },
+  { key: "politicalStatus", labels: ["政治面貌", "political status"] },
+  { key: "certificates", labels: ["资格证书", "专业证书", "证书", "certifications", "certificates"] },
+  { key: "languages", labels: ["语言能力", "外语水平", "language proficiency", "languages"] },
   { key: "experienceSummary", labels: ["实习经历", "工作经历", "实践经历", "work experience", "experience"] },
   { key: "projectSummary", labels: ["项目经历", "项目经验", "project experience", "projects"] },
 ];
@@ -75,6 +78,9 @@ export function buildAutofillPayload(profile) {
     graduationDate: education.graduationDate,
     graduationYear: profile.preferences.graduationYear || String(education.graduationDate ?? "").slice(0, 4),
     skills: profile.skills.join("、"),
+    politicalStatus: profile.qualifications?.politicalStatus ?? "",
+    certificates: (profile.qualifications?.certificates ?? []).join("、"),
+    languages: (profile.qualifications?.languages ?? []).join("、"),
     experienceSummary: storyText(profile.experiences),
     projectSummary: storyText(profile.projects),
   };

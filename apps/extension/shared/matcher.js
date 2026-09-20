@@ -35,8 +35,24 @@ function requiredGraduationYears(text) {
   });
 }
 
+export function requiredExperienceYears(text) {
+  const values = [...String(text).matchAll(/(\d+)(?:\s*[-–—~至]\s*(\d+))?\s*年(?:及以上|以上)?[^，。；;\n]{0,16}经验/g)]
+    .map((match) => Number(match[1]))
+    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 50);
+  return values.length ? Math.max(...values) : null;
+}
+
 function dedupe(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function matchPreference(text, values) {
+  return values.filter((value) => includes(text, value));
+}
+
+function explicitRequirement(text, pattern) {
+  return new RegExp(`(?:必须|须|要求|应为|限)[^，。；;\\n]{0,20}${pattern}|${pattern}[^，。；;\\n]{0,12}(?:必须|须|要求|条件)`, "i").test(text)
+    && !new RegExp(`${pattern}[^，。；;\\n]{0,8}(?:优先|加分)`, "i").test(text);
 }
 
 export function extractRelevantSkills(jobText, profileSkills = []) {
@@ -94,6 +110,17 @@ export function analyzeJob(rawJob, profile) {
     }
   }
 
+  const experienceYears = requiredExperienceYears(job.description);
+  if (experienceYears !== null) {
+    if (profile.preferences.experienceYears >= experienceYears) {
+      score += 5;
+      strengths.push(`全职工作年限满足 ${experienceYears} 年经验要求`);
+    } else {
+      hardRequirementsMet = false;
+      gaps.push(`岗位要求至少 ${experienceYears} 年相关经验，个人资料为 ${profile.preferences.experienceYears} 年`);
+    }
+  }
+
   if (profile.preferences.locations.length && job.location) {
     const locationMatches = profile.preferences.locations.some((location) => includes(job.location, location));
     if (locationMatches) {
@@ -102,6 +129,52 @@ export function analyzeJob(rawJob, profile) {
     } else {
       warnings.push(`工作地点“${job.location}”不在目标城市中`);
     }
+  }
+
+  const industryMatches = matchPreference(text, profile.preferences.industries ?? []);
+  if (industryMatches.length) {
+    score += 5;
+    strengths.push(`行业偏好匹配：${industryMatches.join("、")}`);
+  }
+  const companyTypeMatches = matchPreference(text, profile.preferences.companyTypes ?? []);
+  if (companyTypeMatches.length) {
+    score += 5;
+    strengths.push(`企业性质偏好匹配：${companyTypeMatches.join("、")}`);
+  }
+
+  const politicalStatus = normalize(profile.qualifications?.politicalStatus);
+  if (explicitRequirement(text, "(?:中共)?党员")) {
+    if (politicalStatus.includes("党员")) {
+      score += 5;
+      strengths.push("政治面貌满足岗位的党员要求");
+    } else {
+      hardRequirementsMet = false;
+      gaps.push("岗位可能要求中共党员，个人资料尚未确认满足");
+    }
+  }
+  const certificates = normalize((profile.qualifications?.certificates ?? []).join(" "));
+  if (explicitRequirement(text, "(?:法律职业资格|司法考试|法考|A证)")) {
+    if (/法律职业资格|司法考试|法考|a证/i.test(certificates)) {
+      score += 5;
+      strengths.push("资料库中的法律职业资格与岗位要求匹配");
+    } else {
+      hardRequirementsMet = false;
+      gaps.push("岗位可能要求法律职业资格，资料库中没有对应证书");
+    }
+  }
+  const languages = normalize((profile.qualifications?.languages ?? []).join(" "));
+  if (explicitRequirement(text, "(?:英语六级|CET-?6)")) {
+    if (/英语六级|cet-?6/i.test(languages)) {
+      score += 5;
+      strengths.push("语言能力满足英语六级要求");
+    } else {
+      hardRequirementsMet = false;
+      gaps.push("岗位可能要求英语六级，资料库中没有对应证明");
+    }
+  }
+
+  if (job.sourceType === "wechat-article" && !job.sourceVerified) {
+    warnings.push("这是一条公众号招聘线索，请在投递前核对企业官网、届别和截止日期");
   }
 
   if (job.description.length < 80) warnings.push("页面提取到的岗位描述较短，匹配结果可能不完整");

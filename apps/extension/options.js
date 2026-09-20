@@ -1,6 +1,7 @@
 import { createEmptyProfile, newId, normalizeProfile, splitList, validateProfile } from "./shared/profile.js";
 import { STATUS_LABELS } from "./shared/applications.js";
 import { clearLocalData, loadApplications, loadProfile, saveProfile } from "./shared/storage.js";
+import { deleteProviderKey, getLocalApiHealth, getProviderSettings, parseResumeFile, saveProviderSettings, structureResumeWithAi, testProviderConnection } from "./shared/local-api.js";
 
 const form = document.querySelector("#profile-form");
 const status = document.querySelector("#save-status");
@@ -85,10 +86,21 @@ function collectProfile() {
     projects: [...lists.projects.querySelectorAll("[data-entry='story']")].map(entryData),
     commonAnswers: [...lists.commonAnswers.querySelectorAll("[data-entry='answer']")].map(entryData),
     skills: splitList(named.get("skills")),
+    qualifications: {
+      politicalStatus: named.get("politicalStatus"),
+      certificates: splitList(named.get("certificates")),
+      languages: splitList(named.get("languages")),
+    },
     preferences: {
       roles: splitList(named.get("roles")),
       locations: splitList(named.get("locations")),
+      industries: splitList(named.get("industries")),
+      companyTypes: splitList(named.get("companyTypes")),
+      requiredKeywords: splitList(named.get("requiredKeywords")),
+      excludedKeywords: splitList(named.get("excludedKeywords")),
+      campusOnly: named.get("campusOnly") === "on",
       graduationYear: named.get("graduationYear"),
+      experienceYears: named.get("experienceYears"),
       minimumScore: named.get("minimumScore"),
     },
   });
@@ -103,8 +115,17 @@ function renderProfile(profile) {
   form.elements.namedItem("skills").value = profile.skills.join("、");
   form.elements.namedItem("roles").value = profile.preferences.roles.join("、");
   form.elements.namedItem("locations").value = profile.preferences.locations.join("、");
+  form.elements.namedItem("industries").value = profile.preferences.industries.join("、");
+  form.elements.namedItem("companyTypes").value = profile.preferences.companyTypes.join("、");
+  form.elements.namedItem("requiredKeywords").value = profile.preferences.requiredKeywords.join("、");
+  form.elements.namedItem("excludedKeywords").value = profile.preferences.excludedKeywords.join("、");
+  form.elements.namedItem("campusOnly").checked = profile.preferences.campusOnly;
   form.elements.namedItem("graduationYear").value = profile.preferences.graduationYear;
+  form.elements.namedItem("experienceYears").value = profile.preferences.experienceYears;
   form.elements.namedItem("minimumScore").value = profile.preferences.minimumScore;
+  form.elements.namedItem("politicalStatus").value = profile.qualifications.politicalStatus;
+  form.elements.namedItem("certificates").value = profile.qualifications.certificates.join("、");
+  form.elements.namedItem("languages").value = profile.qualifications.languages.join("、");
 
   for (const list of Object.values(lists)) list.replaceChildren();
   profile.education.forEach(addEducation);
@@ -148,6 +169,13 @@ function renderApplications(applications) {
       link.textContent = application.job.sourcePlatform || "打开";
       sourceCell.append(link);
     } else sourceCell.textContent = "—";
+    if (application.decision === "apply") {
+      const prepareLink = document.createElement("a");
+      prepareLink.href = `prepare.html?id=${encodeURIComponent(application.id)}`;
+      prepareLink.textContent = "准备申请";
+      prepareLink.style.marginLeft = "0.7rem";
+      sourceCell.append(prepareLink);
+    }
     row.append(jobCell, scoreCell, statusCell, updatedCell, sourceCell);
     rows.append(row);
   }
@@ -212,3 +240,131 @@ document.querySelector("#clear-data").addEventListener("click", async () => {
 
 renderProfile(await loadProfile());
 renderApplications(await loadApplications());
+
+const localApiStatus = document.querySelector("#local-api-status");
+const providerForm = document.querySelector("#provider-form");
+const providerStatus = document.querySelector("#provider-status");
+const aiStructureButton = document.querySelector("#ai-structure-resume");
+let parsedResumeText = "";
+
+function showIntegrationStatus(element, message, kind = "") {
+  element.textContent = message;
+  element.className = kind;
+}
+
+async function refreshProviderSettings() {
+  const settings = await getProviderSettings();
+  providerForm.elements.provider.value = settings.provider;
+  providerForm.elements.model.value = settings.model;
+  showIntegrationStatus(providerStatus, settings.apiKeyConfigured
+    ? `已配置密钥（${settings.apiKeySource === "environment" ? "环境变量" : "系统钥匙串"}）`
+    : "尚未配置API Key", settings.apiKeyConfigured ? "success" : "");
+}
+
+try {
+  const health = await getLocalApiHealth();
+  showIntegrationStatus(localApiStatus, `本机服务在线 · v${health.version}`, "online");
+  await refreshProviderSettings();
+} catch (error) {
+  showIntegrationStatus(localApiStatus, error.message, "offline");
+  providerForm.querySelectorAll("input, select, button").forEach((element) => { element.disabled = true; });
+}
+
+document.querySelector("#resume-import").addEventListener("change", async (event) => {
+  const [file] = event.target.files;
+  const importStatus = document.querySelector("#resume-import-status");
+  if (!file) return;
+  try {
+    showIntegrationStatus(importStatus, "正在本机解析简历…");
+    const result = await parseResumeFile(file);
+    parsedResumeText = result.text;
+    aiStructureButton.disabled = false;
+    const draft = result.profileDraft;
+    for (const [name, value] of Object.entries(draft.personal)) {
+      const input = form.elements.namedItem(name);
+      if (input && !input.value && value) input.value = value;
+    }
+    const existingSkills = splitList(form.elements.namedItem("skills").value);
+    form.elements.namedItem("skills").value = [...new Set([...existingSkills, ...draft.skills])].join("、");
+    if (!form.elements.namedItem("graduationYear").value) {
+      form.elements.namedItem("graduationYear").value = draft.yearSignals.at(-1) ?? "";
+    }
+    showIntegrationStatus(importStatus, `已提取 ${result.text.length} 个字符；请核对后点击“保存资料”`, "success");
+  } catch (error) {
+    showIntegrationStatus(importStatus, error.message, "error");
+  } finally {
+    event.target.value = "";
+  }
+});
+
+aiStructureButton.addEventListener("click", async () => {
+  const importStatus = document.querySelector("#resume-import-status");
+  if (!parsedResumeText) return;
+  aiStructureButton.disabled = true;
+  try {
+    showIntegrationStatus(importStatus, "正在将简历文本发送给已配置的模型进行结构化…");
+    const { profile: draft } = await structureResumeWithAi(parsedResumeText);
+    const current = collectProfile();
+    const merged = normalizeProfile({
+      ...current,
+      personal: Object.fromEntries(Object.keys(current.personal).map((key) => [key, current.personal[key] || draft.personal?.[key] || ""])),
+      education: current.education.length ? current.education : draft.education,
+      experiences: current.experiences.length ? current.experiences : draft.experiences,
+      projects: current.projects.length ? current.projects : draft.projects,
+      skills: [...new Set([...current.skills, ...(draft.skills ?? [])])],
+      qualifications: {
+        politicalStatus: current.qualifications.politicalStatus || draft.qualifications?.politicalStatus,
+        certificates: [...new Set([...current.qualifications.certificates, ...(draft.qualifications?.certificates ?? [])])],
+        languages: [...new Set([...current.qualifications.languages, ...(draft.qualifications?.languages ?? [])])],
+      },
+      preferences: {
+        ...current.preferences,
+        roles: current.preferences.roles.length ? current.preferences.roles : draft.preferences?.roles,
+        locations: current.preferences.locations.length ? current.preferences.locations : draft.preferences?.locations,
+        industries: current.preferences.industries.length ? current.preferences.industries : draft.preferences?.industries,
+        companyTypes: current.preferences.companyTypes.length ? current.preferences.companyTypes : draft.preferences?.companyTypes,
+        requiredKeywords: current.preferences.requiredKeywords.length ? current.preferences.requiredKeywords : draft.preferences?.requiredKeywords,
+        excludedKeywords: current.preferences.excludedKeywords.length ? current.preferences.excludedKeywords : draft.preferences?.excludedKeywords,
+        graduationYear: current.preferences.graduationYear || draft.preferences?.graduationYear,
+      },
+    });
+    renderProfile(merged);
+    showIntegrationStatus(importStatus, "AI结构化结果已填入；尚未保存，请逐项核对事实后点击“保存资料”", "success");
+  } catch (error) {
+    showIntegrationStatus(importStatus, error.message, "error");
+  } finally {
+    aiStructureButton.disabled = false;
+  }
+});
+
+providerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(providerForm);
+  try {
+    const settings = await saveProviderSettings(Object.fromEntries(data.entries()));
+    providerForm.elements.apiKey.value = "";
+    showIntegrationStatus(providerStatus, settings.apiKeyConfigured ? "AI配置已保存，密钥位于安全存储" : "配置已保存，但尚未提供密钥", settings.apiKeyConfigured ? "success" : "");
+  } catch (error) {
+    showIntegrationStatus(providerStatus, error.message, "error");
+  }
+});
+
+document.querySelector("#delete-provider-key").addEventListener("click", async () => {
+  try {
+    await deleteProviderKey();
+    providerForm.elements.apiKey.value = "";
+    showIntegrationStatus(providerStatus, "密钥已从安全存储删除", "success");
+  } catch (error) {
+    showIntegrationStatus(providerStatus, error.message, "error");
+  }
+});
+
+document.querySelector("#test-provider").addEventListener("click", async () => {
+  try {
+    showIntegrationStatus(providerStatus, "正在测试模型连接；这会产生一次很小的API调用…");
+    const result = await testProviderConnection();
+    showIntegrationStatus(providerStatus, `${result.provider} · ${result.model}：${result.message}`, "success");
+  } catch (error) {
+    showIntegrationStatus(providerStatus, error.message, "error");
+  }
+});

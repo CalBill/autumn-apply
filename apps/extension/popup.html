@@ -9,7 +9,7 @@
   <body>
     <header>
       <div><span class="mark">A</span><strong>AutumnApply</strong></div>
-      <button id="open-options" class="icon-button" title="打开资料库">设置</button>
+      <div><a href="discover.html" target="_blank" class="icon-link">找岗位</a><button id="open-options" class="icon-button" title="打开资料库">设置</button></div>
     </header>
 
     <main>
@@ -45,6 +45,14 @@
           <button id="save-application" class="secondary">保存为待提交</button>
           <button id="mark-submitted" class="secondary">标记已投递</button>
           <button id="reanalyze" class="text-button">重新分析</button>
+        </div>
+        <div id="submission-panel" class="submission-panel hidden">
+          <strong id="submission-mode"></strong>
+          <p id="submission-copy"></p>
+          <div class="actions">
+            <button id="review-submission" class="secondary">检查最终提交条件</button>
+            <button id="execute-submission" class="danger hidden">执行本次授权提交</button>
+          </div>
         </div>
       </section>
 

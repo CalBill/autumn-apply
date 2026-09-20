@@ -4,7 +4,7 @@ import test from "node:test";
 import { createEmptyProfile, normalizeProfile, splitList, validateProfile } from "./profile.js";
 
 test("splitList accepts Chinese punctuation and removes blanks", () => {
-  assert.deepEqual(splitList("Python，SQL; 数据分析\nGit"), ["Python", "SQL", "数据分析", "Git"]);
+  assert.deepEqual(splitList("Python，SQL; 数据分析、Git"), ["Python", "SQL", "数据分析", "Git"]);
 });
 
 test("normalizeProfile removes unknown fields and normalizes arrays", () => {
@@ -20,6 +20,21 @@ test("normalizeProfile removes unknown fields and normalizes arrays", () => {
   assert.deepEqual(profile.skills, ["Python", "SQL"]);
   assert.equal(profile.preferences.minimumScore, 100);
   assert.equal("unexpectedSecret" in profile, false);
+});
+
+test("normalizeProfile preserves job preferences and qualifications", () => {
+  const profile = normalizeProfile({
+    qualifications: { politicalStatus: "中共党员", certificates: "英语六级、基金从业", languages: ["英语"] },
+    preferences: {
+      industries: "金融、航运", companyTypes: "央企、国企", requiredKeywords: "校招",
+      excludedKeywords: "销售、外包", campusOnly: false,
+    },
+  });
+
+  assert.deepEqual(profile.qualifications.certificates, ["英语六级", "基金从业"]);
+  assert.deepEqual(profile.preferences.industries, ["金融", "航运"]);
+  assert.deepEqual(profile.preferences.excludedKeywords, ["销售", "外包"]);
+  assert.equal(profile.preferences.campusOnly, false);
 });
 
 test("validateProfile reports the minimum required data", () => {

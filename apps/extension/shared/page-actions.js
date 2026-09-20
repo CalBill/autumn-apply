@@ -153,3 +153,70 @@ export function fillGenericForm(payload) {
   }
   return report;
 }
+
+export function reviewSubmissionPage(options = {}) {
+  const normalize = (value) => String(value ?? "").replace(/\s+/g, " ").trim();
+  const visible = (element) => {
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+  };
+  const labelFor = (element) => {
+    const values = [element.getAttribute("aria-label"), element.getAttribute("placeholder"), element.name, element.id];
+    if (element.id) values.push(document.querySelector(`label[for='${CSS.escape(element.id)}']`)?.innerText);
+    values.push(element.closest("label")?.innerText);
+    return normalize(values.filter(Boolean).join(" ")) || "未命名字段";
+  };
+  const hasValue = (element) => {
+    const type = (element.getAttribute("type") || "").toLowerCase();
+    if (["checkbox", "radio"].includes(type)) return element.checked;
+    if (type === "file") return Boolean(element.files?.length);
+    if (element.isContentEditable) return Boolean(normalize(element.textContent));
+    return Boolean(normalize(element.value));
+  };
+  const forms = [...document.querySelectorAll("form")].filter(visible);
+  const rankedForms = forms.map((form) => ({
+    form,
+    controls: [...form.querySelectorAll("input, textarea, select, [contenteditable='true']")].filter(visible),
+  })).sort((a, b) => b.controls.length - a.controls.length);
+  const candidate = rankedForms[0];
+  const blockers = [];
+  const warnings = [];
+  if (!candidate || candidate.controls.length < 2) blockers.push("没有识别到可提交的申请表单");
+
+  const controls = candidate?.controls ?? [];
+  for (const element of controls) {
+    const type = (element.getAttribute("type") || "").toLowerCase();
+    if (["hidden", "submit", "button", "reset"].includes(type) || element.disabled) continue;
+    const required = element.required || element.getAttribute("aria-required") === "true";
+    if (required && !hasValue(element)) blockers.push(`必填项尚未完成：${labelFor(element)}`);
+    if (element.dataset.autumnApplyStatus === "review" && !hasValue(element)) blockers.push(`仍需人工处理：${labelFor(element)}`);
+    if (element.dataset.autumnApplyStatus === "review" && hasValue(element)) warnings.push(`请再次确认：${labelFor(element)}`);
+  }
+
+  const captcha = document.querySelector("iframe[src*='captcha' i], iframe[src*='recaptcha' i], [class*='captcha' i], [id*='captcha' i], [class*='verify-code' i], [id*='verify-code' i]");
+  if (captcha && visible(captcha)) blockers.push("页面存在验证码或人机验证，必须由用户处理");
+  if (controls.some((element) => (element.getAttribute("type") || "").toLowerCase() === "password")) blockers.push("页面包含密码字段，不允许自动提交");
+
+  const submitCandidates = candidate ? [...candidate.form.querySelectorAll("button, input[type='submit']")]
+    .filter(visible)
+    .filter((element) => {
+      const text = normalize(element.innerText || element.value || element.getAttribute("aria-label"));
+      return /^(最终提交|提交申请|确认提交|提交|立即申请|申请职位|submit application|submit)(?:\b|（|\(|$)/i.test(text);
+    }) : [];
+  if (submitCandidates.length === 0) blockers.push("没有识别到唯一的最终提交按钮");
+  if (submitCandidates.length > 1) blockers.push("识别到多个可能的提交按钮，需要用户选择");
+  const submitButton = submitCandidates.length === 1 ? submitCandidates[0] : null;
+  const submitText = normalize(submitButton?.innerText || submitButton?.value || submitButton?.getAttribute("aria-label"));
+  const ready = blockers.length === 0;
+  let clicked = false;
+  if (options.submit === true && ready) {
+    if (options.expectedText && normalize(options.expectedText) !== submitText) {
+      blockers.push("最终提交按钮在确认后发生变化，已停止提交");
+    } else {
+      submitButton.click();
+      clicked = true;
+    }
+  }
+  return { ready: blockers.length === 0, blockers: [...new Set(blockers)], warnings: [...new Set(warnings)], submitText, clicked };
+}

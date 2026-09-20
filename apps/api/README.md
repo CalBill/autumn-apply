@@ -1,5 +1,30 @@
 # Local API
 
-Planned local service for candidate profiles, job normalization, matching, resume generation and the application ledger.
+The local service parses resume files and is the security boundary for optional external model requests. It binds to `127.0.0.1:43127`; it is not exposed on the LAN.
 
-The API will bind to localhost by default and will document every optional external model request.
+```bash
+npm install
+npm run start:api
+curl http://127.0.0.1:43127/health
+```
+
+Current endpoints:
+
+- `GET /health`
+- `POST /v1/resumes/parse` with `{ filename, mimeType, dataBase64 }`
+- `GET/PUT /v1/settings/provider`
+- `DELETE /v1/settings/provider/key`
+- `POST /v1/ai/test`
+- `POST /v1/ai/resumes/structure`
+- `POST /v1/ai/match`
+- `POST /v1/ai/search` (OpenAI only)
+
+PDF, DOCX, TXT and Markdown files are parsed locally. The service rejects payloads over 22 MB and resume files over 15 MB. Browser requests are accepted only from Chrome extensions and localhost origins.
+
+On macOS, BYOK secrets are stored in Keychain under `dev.autumn-apply.api-key`. Only provider, official base URL and model name are written to `~/.config/autumn-apply/provider.json` with mode `0600`. Other platforms can provide `OPENAI_API_KEY` or `DEEPSEEK_API_KEY` through the environment; plaintext key files are intentionally unsupported.
+
+OpenAI and DeepSeek use their official Responses-compatible endpoints. Requests set `store: false`; API keys stay inside the local service and are never returned to the extension.
+
+Resume AI structuring is an explicit second step after local text extraction. Semantic job matching strips the candidate's name, email, phone and links before sending education, experience, skills and preferences to the configured provider. Both workflows use strict JSON schemas and label missing evidence as unknown instead of guessing.
+
+AI web discovery uses OpenAI's hosted `web_search` tool only after an explicit click. Returned URLs must appear in the tool's cited sources, resolve to public HTTPS addresses, and pass a separate reachability/content-signal check. Private-network, localhost, credential-bearing and non-HTTPS URLs are rejected. DeepSeek remains available for structuring and matching but is not presented as having hosted web search.
