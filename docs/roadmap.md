@@ -39,6 +39,7 @@
 - [x] Explicit AI resume structuring with strict schemas
 - [x] Privacy-minimized semantic matching and hard-requirement extraction
 - [x] OpenAI hosted web search with citation and public-URL verification
+- [x] Grounded AI application package with source-id validation
 - [ ] OCR for scanned resumes
 - [ ] Linux Secret Service and Windows Credential Manager persistence
 
@@ -52,15 +53,18 @@
 
 ## Milestone 3 — Application workspace
 
-- [ ] Local application dashboard
-- [ ] Resume-version tracking
-- [ ] Duplicate detection
+- [x] Local application dashboard and per-job preparation page
+- [x] Current per-job resume version tracking
+- [x] Duplicate detection by normalized job URL and source id
+- [x] Missing-information questions with explicit fact confirmation
+- [x] Review-only and one-time-authorized submission modes
+- [x] Submission-attempt state separated from confirmed submission
 - [ ] Interview-stage tracking
 - [ ] Export and encrypted backup
 
 ## Milestone 4 — Assisted batches
 
-- [ ] User-approved job shortlist
+- [x] User-approved apply / skip decisions
 - [ ] Batch preparation with per-job review
 - [ ] Failure recovery and audit log
 - [ ] Rate limits and platform-policy controls

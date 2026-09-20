@@ -72,7 +72,7 @@ export function createLocalApiServer({ parseResume = parseResumeBuffer, settings
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? `${DEFAULT_HOST}:${DEFAULT_PORT}`}`);
     try {
       if (request.method === "GET" && url.pathname === "/health") {
-        writeJson(response, 200, { ok: true, service: "autumn-apply-local-api", version: "0.4.0" }, origin);
+        writeJson(response, 200, { ok: true, service: "autumn-apply-local-api", version: "0.5.0" }, origin);
         return;
       }
       if (request.method === "POST" && url.pathname === "/v1/resumes/parse") {
