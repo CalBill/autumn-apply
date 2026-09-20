@@ -46,6 +46,15 @@ function dedupe(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function matchPreference(text, values) {
+  return values.filter((value) => includes(text, value));
+}
+
+function explicitRequirement(text, pattern) {
+  return new RegExp(`(?:必须|须|要求|应为|限)[^，。；;\\n]{0,20}${pattern}|${pattern}[^，。；;\\n]{0,12}(?:必须|须|要求|条件)`, "i").test(text)
+    && !new RegExp(`${pattern}[^，。；;\\n]{0,8}(?:优先|加分)`, "i").test(text);
+}
+
 export function extractRelevantSkills(jobText, profileSkills = []) {
   const candidates = dedupe([...profileSkills, ...COMMON_SKILLS]);
   return candidates.filter((skill) => includes(jobText, skill));
@@ -119,6 +128,48 @@ export function analyzeJob(rawJob, profile) {
       strengths.push(`工作地点符合偏好：${job.location}`);
     } else {
       warnings.push(`工作地点“${job.location}”不在目标城市中`);
+    }
+  }
+
+  const industryMatches = matchPreference(text, profile.preferences.industries ?? []);
+  if (industryMatches.length) {
+    score += 5;
+    strengths.push(`行业偏好匹配：${industryMatches.join("、")}`);
+  }
+  const companyTypeMatches = matchPreference(text, profile.preferences.companyTypes ?? []);
+  if (companyTypeMatches.length) {
+    score += 5;
+    strengths.push(`企业性质偏好匹配：${companyTypeMatches.join("、")}`);
+  }
+
+  const politicalStatus = normalize(profile.qualifications?.politicalStatus);
+  if (explicitRequirement(text, "(?:中共)?党员")) {
+    if (politicalStatus.includes("党员")) {
+      score += 5;
+      strengths.push("政治面貌满足岗位的党员要求");
+    } else {
+      hardRequirementsMet = false;
+      gaps.push("岗位可能要求中共党员，个人资料尚未确认满足");
+    }
+  }
+  const certificates = normalize((profile.qualifications?.certificates ?? []).join(" "));
+  if (explicitRequirement(text, "(?:法律职业资格|司法考试|法考|A证)")) {
+    if (/法律职业资格|司法考试|法考|a证/i.test(certificates)) {
+      score += 5;
+      strengths.push("资料库中的法律职业资格与岗位要求匹配");
+    } else {
+      hardRequirementsMet = false;
+      gaps.push("岗位可能要求法律职业资格，资料库中没有对应证书");
+    }
+  }
+  const languages = normalize((profile.qualifications?.languages ?? []).join(" "));
+  if (explicitRequirement(text, "(?:英语六级|CET-?6)")) {
+    if (/英语六级|cet-?6/i.test(languages)) {
+      score += 5;
+      strengths.push("语言能力满足英语六级要求");
+    } else {
+      hardRequirementsMet = false;
+      gaps.push("岗位可能要求英语六级，资料库中没有对应证明");
     }
   }
 
