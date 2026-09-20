@@ -1,7 +1,7 @@
 import { createEmptyProfile, newId, normalizeProfile, splitList, validateProfile } from "./shared/profile.js";
 import { STATUS_LABELS } from "./shared/applications.js";
 import { clearLocalData, loadApplications, loadProfile, saveProfile } from "./shared/storage.js";
-import { deleteProviderKey, getLocalApiHealth, getProviderSettings, parseResumeFile, saveProviderSettings, testProviderConnection } from "./shared/local-api.js";
+import { deleteProviderKey, getLocalApiHealth, getProviderSettings, parseResumeFile, saveProviderSettings, structureResumeWithAi, testProviderConnection } from "./shared/local-api.js";
 
 const form = document.querySelector("#profile-form");
 const status = document.querySelector("#save-status");
@@ -219,6 +219,8 @@ renderApplications(await loadApplications());
 const localApiStatus = document.querySelector("#local-api-status");
 const providerForm = document.querySelector("#provider-form");
 const providerStatus = document.querySelector("#provider-status");
+const aiStructureButton = document.querySelector("#ai-structure-resume");
+let parsedResumeText = "";
 
 function showIntegrationStatus(element, message, kind = "") {
   element.textContent = message;
@@ -250,6 +252,8 @@ document.querySelector("#resume-import").addEventListener("change", async (event
   try {
     showIntegrationStatus(importStatus, "正在本机解析简历…");
     const result = await parseResumeFile(file);
+    parsedResumeText = result.text;
+    aiStructureButton.disabled = false;
     const draft = result.profileDraft;
     for (const [name, value] of Object.entries(draft.personal)) {
       const input = form.elements.namedItem(name);
@@ -265,6 +269,37 @@ document.querySelector("#resume-import").addEventListener("change", async (event
     showIntegrationStatus(importStatus, error.message, "error");
   } finally {
     event.target.value = "";
+  }
+});
+
+aiStructureButton.addEventListener("click", async () => {
+  const importStatus = document.querySelector("#resume-import-status");
+  if (!parsedResumeText) return;
+  aiStructureButton.disabled = true;
+  try {
+    showIntegrationStatus(importStatus, "正在将简历文本发送给已配置的模型进行结构化…");
+    const { profile: draft } = await structureResumeWithAi(parsedResumeText);
+    const current = collectProfile();
+    const merged = normalizeProfile({
+      ...current,
+      personal: Object.fromEntries(Object.keys(current.personal).map((key) => [key, current.personal[key] || draft.personal?.[key] || ""])),
+      education: current.education.length ? current.education : draft.education,
+      experiences: current.experiences.length ? current.experiences : draft.experiences,
+      projects: current.projects.length ? current.projects : draft.projects,
+      skills: [...new Set([...current.skills, ...(draft.skills ?? [])])],
+      preferences: {
+        ...current.preferences,
+        roles: current.preferences.roles.length ? current.preferences.roles : draft.preferences?.roles,
+        locations: current.preferences.locations.length ? current.preferences.locations : draft.preferences?.locations,
+        graduationYear: current.preferences.graduationYear || draft.preferences?.graduationYear,
+      },
+    });
+    renderProfile(merged);
+    showIntegrationStatus(importStatus, "AI结构化结果已填入；尚未保存，请逐项核对事实后点击“保存资料”", "success");
+  } catch (error) {
+    showIntegrationStatus(importStatus, error.message, "error");
+  } finally {
+    aiStructureButton.disabled = false;
   }
 });
 

@@ -67,3 +67,17 @@ test("AI test endpoint returns provider status without exposing credentials", as
     });
   }, modelFactory);
 });
+
+test("AI match endpoint returns a structured assessment", async () => {
+  const assessment = { score: 90, summary: "高度匹配", recommendation: "apply", hardRequirements: [], strengths: [], gaps: [], warnings: [] };
+  const modelFactory = async () => ({ generateStructured: async () => ({ data: assessment, responseId: "resp_match", usage: null }) });
+  await withServer(undefined, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/v1/ai/match`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile: { skills: ["合规"], preferences: {} }, job: { title: "合规岗", description: "招聘2027届毕业生" } }),
+    });
+    const body = await response.json();
+    assert.equal(body.assessment.score, 90);
+    assert.equal(body.responseId, "resp_match");
+  }, modelFactory);
+});

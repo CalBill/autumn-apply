@@ -53,6 +53,10 @@ ul { margin: 0.35rem 0 0; padding-left: 1rem; color: #566158; font-size: 0.72rem
 .job-actions { display: flex; gap: 0.55rem; }
 .job-actions > * { flex: 1; }
 .shortlist.saved { color: var(--dark); background: #dce9df; }
+.ai-result { padding: 0.75rem; border: 1px solid #b8cdbc; border-radius: 10px; background: #eef6f0; }
+.ai-result strong { font-size: 0.8rem; }
+.ai-result p { margin: 0.35rem 0; color: #455148; font-size: 0.75rem; line-height: 1.45; }
+.ai-match:disabled { opacity: 0.6; cursor: wait; }
 .empty { padding: 3rem; color: var(--muted); text-align: center; }
 .errors { padding: 0.8rem 1rem; border: 1px solid #e0a78b; border-radius: 12px; color: var(--danger); background: #fff0e8; font-size: 0.8rem; }
 .hidden { display: none; }

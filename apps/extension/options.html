@@ -27,6 +27,8 @@
             <h3>导入简历</h3>
             <p>PDF、DOCX、TXT和Markdown只发送到本机服务。识别结果只补充空白字段，不覆盖现有资料。</p>
             <label class="secondary file-button">选择简历<input id="resume-import" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" /></label>
+            <button id="ai-structure-resume" class="secondary" type="button" disabled>使用AI进一步结构化</button>
+            <small>点击AI结构化后，提取出的简历文本会发送给你配置的模型服务；不会发送原始文件。</small>
             <p id="resume-import-status" role="status"></p>
           </div>
           <form id="provider-form" class="integration-card">

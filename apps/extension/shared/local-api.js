@@ -46,3 +46,11 @@ export function deleteProviderKey() {
 export function testProviderConnection() {
   return request("/v1/ai/test", { method: "POST", body: "{}" });
 }
+
+export function structureResumeWithAi(text) {
+  return request("/v1/ai/resumes/structure", { method: "POST", body: JSON.stringify({ text }) });
+}
+
+export function analyzeJobWithAi(profile, job) {
+  return request("/v1/ai/match", { method: "POST", body: JSON.stringify({ profile, job }) });
+}

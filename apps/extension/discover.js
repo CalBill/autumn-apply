@@ -3,6 +3,7 @@ import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
 import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, saveApplications, saveCompanySources, saveDiscovery } from "./shared/storage.js";
+import { analyzeJobWithAi } from "./shared/local-api.js";
 
 const form = document.querySelector("#search-form");
 const button = document.querySelector("#search-button");
@@ -61,6 +62,28 @@ function renderResults(output) {
       await saveApplications(applications);
       shortlist.textContent = "已加入候选";
       shortlist.classList.add("saved");
+    });
+    const aiButton = card.querySelector(".ai-match");
+    const aiResult = card.querySelector(".ai-result");
+    aiButton.addEventListener("click", async () => {
+      aiButton.disabled = true;
+      aiButton.textContent = "分析中…";
+      try {
+        const output = await analyzeJobWithAi(profile, entry.job);
+        const assessment = output.assessment;
+        card.querySelector(".ai-score").textContent = `${assessment.score}分 · ${assessment.recommendation}`;
+        card.querySelector(".ai-summary").textContent = assessment.summary;
+        list(card.querySelector(".ai-requirements"), assessment.hardRequirements.slice(0, 6).map((item) => {
+          const label = { met: "满足", not_met: "不满足", unknown: "待确认" }[item.status] ?? item.status;
+          return `${label}：${item.requirement}${item.candidateEvidence ? `（${item.candidateEvidence}）` : ""}`;
+        }), "未识别到明确硬条件");
+        aiResult.classList.remove("hidden");
+        aiButton.textContent = "重新分析";
+      } catch (error) {
+        aiButton.textContent = error.message;
+      } finally {
+        aiButton.disabled = false;
+      }
     });
     resultsElement.append(card);
   }

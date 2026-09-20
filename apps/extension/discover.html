@@ -27,7 +27,7 @@
             <label>最近天数<input name="recentDays" type="number" min="1" max="365" /></label>
           </div>
           <button id="search-button" class="primary" type="submit">开始寻找岗位</button>
-          <p class="boundary">只读取公开信息，不登录、不投递、不发送个人资料。公众号结果会标注为待核验；验证码由用户处理，系统不会绕过。</p>
+          <p class="boundary">基础搜索只读取公开信息，不发送个人资料。点击“AI深度分析”后，仅会发送教育、经历、技能和求职偏好，不发送姓名、邮箱或手机号。公众号结果会标注为待核验；验证码由用户处理，系统不会绕过。</p>
         </form>
       </aside>
 
@@ -49,7 +49,8 @@
           <div class="score"><strong></strong><span>匹配</span></div>
         </div>
         <div class="signals"><div><strong>优势</strong><ul class="strengths"></ul></div><div><strong>注意</strong><ul class="gaps"></ul></div></div>
-        <div class="job-actions"><a class="secondary job-link" target="_blank" rel="noreferrer">查看官方岗位</a><button class="primary shortlist" type="button">加入候选清单</button></div>
+        <div class="ai-result hidden"><strong>AI语义匹配 · <span class="ai-score"></span></strong><p class="ai-summary"></p><ul class="ai-requirements"></ul></div>
+        <div class="job-actions"><a class="secondary job-link" target="_blank" rel="noreferrer">查看官方岗位</a><button class="secondary ai-match" type="button">AI深度分析</button><button class="primary shortlist" type="button">加入候选清单</button></div>
       </article>
     </template>
 
