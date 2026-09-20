@@ -59,12 +59,14 @@ Optionally import a text-based PDF or DOCX resume. Confirm local parsing fills o
 
 1. Open the extension popup and choose **找岗位**.
 2. Search for `数据分析`, optionally select a city, set the maximum to 3 and keep the minimum score low for the smoke test.
-3. Confirm the source summary includes multiple company career sites and `微信公众号`.
-4. Confirm official results have an `企业官网岗位` label and article results have a `公众号招聘信息` label.
-5. Confirm article results display a verification warning and link to the original search result.
-6. Choose `不投` for one result and confirm the decision is retained.
-7. Choose `要投 · 准备材料` for another result and confirm the application preparation page opens.
-8. Enable search monitoring, choose a 12, 24 or 72-hour interval, rerun the base search, and confirm the saved-monitor status appears. Do not expect an immediate notification when there are no newly discovered jobs.
+3. Add a fictional or public priority term such as `某集团招聘`; confirm the status says it is performing a multi-angle WeChat search and never exceeds six sequential query variants.
+4. Confirm the source summary includes multiple company career sites and `微信公众号`.
+5. Confirm official results have an `企业官网岗位` label and article results have a `公众号招聘信息` label.
+6. Confirm article results display the publishing account, article category, date/deadline when present, a verification warning, the original link and a title-search fallback.
+7. Confirm the same repost found by multiple query variants appears only once.
+8. Choose `不投` for one result and confirm the decision is retained.
+9. Choose `要投 · 准备材料` for another result and confirm the application preparation page opens.
+10. Enable search monitoring, choose a 12, 24 or 72-hour interval, rerun the base search, and confirm the saved-monitor status appears. Do not expect an immediate notification when there are no newly discovered jobs.
 
 Optionally add one extra official source using `公司名 | https://官方招聘入口`. Use a supported Moka, Feishu Jobs, Greenhouse, Lever or Ashby URL that you independently verified from the company's website. Confirm an unsupported URL is rejected rather than treated as connected.
 

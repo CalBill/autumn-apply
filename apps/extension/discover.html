@@ -18,6 +18,7 @@
           <div class="source"><span></span><div><strong>多来源机会发现</strong><p>企业官网招聘系统 + 微信公众号招聘文章</p></div></div>
           <label>搜索岗位<input name="queries" placeholder="数据分析、商业分析" /><small>留空时使用资料库中的目标岗位，最多三个方向。</small></label>
           <label>工作地点<input name="locations" placeholder="上海、深圳" /></label>
+          <label>公众号重点词<input name="wechatKeywords" placeholder="国资小新、中石油招聘、航运" /><small>可填写重点公司、公众号或行业词；系统会与届别组合搜索，并把总请求数限制在六次。</small></label>
           <label>要求必须包含<input name="requiredKeywords" placeholder="实习、Python" /><small>详情中必须同时包含这些词。</small></label>
           <label>排除关键词<input name="excludedKeywords" placeholder="高级、负责人、外包" /></label>
           <label>额外企业官网来源<textarea name="companySources" rows="5" placeholder="公司名 | https://官方招聘入口"></textarea><small>每行一个。支持 Moka、飞书招聘、Greenhouse、Lever、Ashby；必须填写公司官网实际跳转到的招聘入口。</small></label>
@@ -33,7 +34,7 @@
             <label>检查频率<select name="intervalHours"><option value="12">每12小时</option><option value="24">每天</option><option value="72">每3天</option></select></label>
             <small id="monitor-status">后台只运行基础搜索，不调用 AI；只有发现新岗位时通知。</small>
           </div>
-          <p class="boundary">基础搜索只读取公开信息，不发送个人资料。点击“AI深度分析”后，仅会发送教育、经历、技能和求职偏好，不发送姓名、邮箱或手机号。公众号结果会标注为待核验；验证码由用户处理，系统不会绕过。</p>
+          <p class="boundary">基础搜索只读取公开信息，不发送个人资料。公众号搜索会低频、顺序执行且不重试；出现验证码或临时限制后立即停止。点击“AI深度分析”后，仅会发送教育、经历、技能和求职偏好，不发送姓名、邮箱或手机号。公众号结果始终标注为待核验。</p>
         </form>
       </aside>
 
@@ -56,7 +57,7 @@
         </div>
         <div class="signals"><div><strong>优势</strong><ul class="strengths"></ul></div><div><strong>注意</strong><ul class="gaps"></ul></div></div>
         <div class="ai-result hidden"><strong>AI语义匹配 · <span class="ai-score"></span></strong><p class="ai-summary"></p><ul class="ai-requirements"></ul></div>
-        <div class="job-actions"><a class="secondary job-link" target="_blank" rel="noreferrer">查看官方岗位</a><button class="secondary ai-match" type="button">AI深度分析</button></div>
+        <div class="job-actions"><a class="secondary job-link" target="_blank" rel="noreferrer">查看官方岗位</a><a class="secondary wechat-search-link hidden" target="_blank" rel="noreferrer">标题失效时重搜</a><button class="secondary ai-match" type="button">AI深度分析</button></div>
         <div class="decision-actions"><button class="primary apply-job" type="button">要投 · 准备材料</button><button class="skip-job" type="button">不投</button></div>
       </article>
     </template>

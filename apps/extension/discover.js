@@ -35,7 +35,12 @@ function renderResults(output) {
   emptyElement.classList.toggle("hidden", output.results.length > 0);
   emptyElement.textContent = output.results.length ? "" : "没有岗位同时满足当前地点、关键词和分数条件。可以适当放宽条件重试。";
   titleElement.textContent = `找到 ${output.results.length} 个候选岗位`;
-  summaryElement.textContent = output.sourceStats.map((source) => `${source.name}读取 ${source.fetched} 条`).join("；");
+  summaryElement.textContent = output.sourceStats.map((source) => {
+    const querySummary = source.plannedQueries
+      ? `（完成 ${source.searchedQueries}/${source.plannedQueries} 组查询）`
+      : "";
+    return `${source.name}读取 ${source.fetched} 条${querySummary}`;
+  }).join("；");
   errorsElement.classList.toggle("hidden", output.errors.length === 0);
   errorsElement.textContent = output.errors.length ? `部分结果不完整：${output.errors.join("；")}` : "";
 
@@ -43,7 +48,21 @@ function renderResults(output) {
     const card = document.querySelector("#result-template").content.firstElementChild.cloneNode(true);
     card.querySelector(".company").textContent = entry.job.company;
     card.querySelector(".title").textContent = entry.job.title;
-    card.querySelector(".meta").textContent = [entry.job.location, entry.job.publishedAt, entry.job.sourcePlatform].filter(Boolean).join(" · ");
+    const wechatType = {
+      "company-announcement": "单企业公告",
+      roundup: "岗位汇总",
+      internship: "实习信息",
+      "early-batch": "提前批",
+      event: "宣讲/招聘会",
+    }[entry.job.metadata?.articleType];
+    card.querySelector(".meta").textContent = [
+      entry.job.location,
+      entry.job.publishedAt,
+      entry.job.deadline ? `截止 ${entry.job.deadline}` : "",
+      entry.job.sourceName,
+      wechatType,
+      entry.job.sourcePlatform,
+    ].filter(Boolean).join(" · ");
     card.querySelector(".score strong").textContent = entry.assessment.score;
     list(card.querySelector(".strengths"), entry.assessment.strengths.slice(0, 3), "暂未发现明确优势");
     list(card.querySelector(".gaps"), [...entry.assessment.gaps, ...entry.assessment.warnings].slice(0, 3), "没有明显提醒");
@@ -57,6 +76,11 @@ function renderResults(output) {
     const link = card.querySelector(".job-link");
     link.href = entry.job.sourceUrl;
     link.textContent = entry.job.sourceType === "wechat-article" ? "查看原始文章" : "查看官方岗位";
+    const wechatSearchLink = card.querySelector(".wechat-search-link");
+    if (entry.job.sourceType === "wechat-article" && entry.job.metadata?.fallbackSearchUrl) {
+      wechatSearchLink.href = entry.job.metadata.fallbackSearchUrl;
+      wechatSearchLink.classList.remove("hidden");
+    }
     const applyButton = card.querySelector(".apply-job");
     const skipButton = card.querySelector(".skip-job");
     const existing = applications.find((item) => item.jobId === entry.job.id);
@@ -138,6 +162,7 @@ async function saveMonitor(instructions, results) {
 function fillInstructions(instructions) {
   form.elements.queries.value = instructions.queries.join("、");
   form.elements.locations.value = instructions.locations.join("、");
+  form.elements.wechatKeywords.value = (instructions.wechatKeywords ?? []).join("、");
   form.elements.requiredKeywords.value = instructions.requiredKeywords.join("、");
   form.elements.excludedKeywords.value = instructions.excludedKeywords.join("、");
   form.elements.minimumScore.value = instructions.minimumScore;

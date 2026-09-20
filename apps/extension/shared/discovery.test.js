@@ -62,3 +62,57 @@ test("discovery filters, enriches and ranks real job shapes", async () => {
   assert.equal(output.results[0].job.id, "1");
   assert.ok(output.results[0].assessment.score >= 80);
 });
+
+test("batch providers receive the full WeChat search context once", async () => {
+  const calls = [];
+  const provider = {
+    id: "wechat-fixture",
+    name: "微信公众号",
+    batchSearch: true,
+    search: async (input) => {
+      calls.push(input);
+      return { jobs: [], warnings: ["部分查询受到临时限制"] };
+    },
+    detail: async (job) => job,
+  };
+  const output = await discoverJobs({
+    profile,
+    instructions: { queries: "数据分析、商业分析", locations: "上海、北京", wechatKeywords: "国资小新" },
+    providers: [provider],
+  });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].queries, ["数据分析", "商业分析"]);
+  assert.deepEqual(calls[0].locations, ["上海", "北京"]);
+  assert.deepEqual(calls[0].focusKeywords, ["国资小新"]);
+  assert.match(output.errors[0], /临时限制/);
+});
+
+test("high-quality WeChat clues remain visible when the excerpt only signals the searched role", async () => {
+  const provider = {
+    id: "wechat-fixture",
+    name: "微信公众号",
+    batchSearch: true,
+    search: async () => ({
+      jobs: [{
+        id: "wechat-1",
+        providerId: "wechat-1",
+        title: "某集团2027届校园招聘正式启动",
+        company: "某集团",
+        location: "上海",
+        description: "面向2027届毕业生开放网申，具体岗位请查看原文。",
+        sourceUrl: "https://weixin.sogou.com/link?url=test",
+        sourcePlatform: "微信公众号 · 搜狗微信",
+        sourceType: "wechat-article",
+        sourceVerified: false,
+        metadata: { qualityScore: 85, matchedQueries: ["数据分析 2027届 校招"], articleType: "company-announcement" },
+      }],
+      searchedQueries: ["数据分析 2027届 校招"],
+      searchPlan: ["数据分析 2027届 校招"],
+    }),
+    detail: async (job) => job,
+  };
+  const output = await discoverJobs({ profile, instructions: { queries: "数据分析", minimumScore: 60 }, providers: [provider] });
+  assert.equal(output.results.length, 1);
+  assert.match(output.results[0].assessment.strengths.join(" "), /公众号检索词命中/);
+  assert.equal(output.sourceStats[0].searchedQueries, 1);
+});

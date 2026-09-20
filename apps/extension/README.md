@@ -17,7 +17,7 @@ The extension stores profile data with `chrome.storage.local` and does not reque
 
 1. Double-click `AutumnApply.command` on macOS, or run `npm run launch`, then load `dist/extension` when Chrome asks on first use.
 2. Open **工作台**, follow the onboarding checklist, and save a candidate profile; optionally import a PDF/DOCX resume or configure BYOK AI.
-3. Open **找岗位**, refine role/location/required/excluded instructions, and search supported official career systems and public WeChat clues.
+3. Open **找岗位**, refine role/location/required/excluded instructions, optionally add priority WeChat account/company terms, and search supported official career systems and public WeChat clues.
 4. Optionally run privacy-minimized AI matching or OpenAI hosted web discovery with source verification.
 5. Choose **要投** or **不投** for each result.
 6. For an application, answer missing-fact questions, generate a local or AI-assisted job-specific resume, then download Word or inspect the PDF print view.
@@ -35,3 +35,5 @@ The generic form engine intentionally skips passwords, verification codes, ident
 Platform detection is a safety and diagnostics layer, not a promise of full Moka or Beisen automation. Custom widgets, repeated education/work sections, uploads and multi-page flows may remain manual until a dedicated adapter is added.
 
 Base discovery uses explicit host permissions for supported official career systems and Sogou Weixin. It sends no account or full candidate profile to those sources. Optional AI calls go through the loopback-only local service; the UI discloses what leaves the machine and never receives the API key.
+
+WeChat discovery builds at most six sequential queries from roles, cohort, locations, industry/company preferences and user-entered priority terms. It uses no retry loop, stops on CAPTCHA or temporary access restrictions, deduplicates reposts with a stable title/account/date key, and keeps a title-search fallback for expiring Sogou article links. Every article remains unverified until the user checks the employer and application destination.

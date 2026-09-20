@@ -19,6 +19,7 @@
 - [x] Shared adapters for Feishu Jobs, Greenhouse, Lever and Ashby
 - [x] User-maintained official source watchlist
 - [x] WeChat public-article discovery with CAPTCHA stop
+- [x] Bounded multi-angle WeChat query planning, stable repost deduplication and expiring-link fallback
 - [x] Source trust labels for official jobs and unverified article clues
 - [x] User-directed role, location, include and exclude filters
 - [x] Fetch job details, rank matches and save a shortlist

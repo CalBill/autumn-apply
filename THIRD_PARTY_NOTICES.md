@@ -20,7 +20,7 @@ Copyright (c) 2025 Caleb John & career-ops contributors
 
 The adapted browser modules retain only public, read-only search and detail fetching for Tencent, Meituan, Feishu Jobs, Moka, Greenhouse, Lever and Ashby. They do not include application automation, user profiles, scoring, tracking, anti-bot identity spoofing or retry behavior from those projects. Moka response decryption uses the public key delivered in the public website response and was ported from Node crypto to the browser Web Crypto API.
 
-The Sogou Weixin article parser is adapted from `WupfAGI/wechat-search-skill` at commit `b8df02cffd3925ba655796ace74f48b24ae85d47` under the MIT License. The browser port keeps only single-page public search and recruitment-content normalization. It does not copy API-key handling, AI summaries, scheduled delivery or anti-bot user-agent spoofing, and it stops when a CAPTCHA or rate limit is encountered.
+The Sogou Weixin article parser is adapted from `WupfAGI/wechat-search-skill` at commit `b8df02cffd3925ba655796ace74f48b24ae85d47` under the MIT License. The browser port keeps only first-page public searches and recruitment-content normalization. AutumnApply adds its own bounded multi-query planner, stable repost deduplication, article classification and fallback-title search. It does not copy API-key handling, AI summaries, scheduled delivery or anti-bot user-agent spoofing, and it stops without retry when a CAPTCHA, rate limit or temporary access restriction is encountered.
 
 DOCX generation uses the `docx` npm package under the MIT License. AutumnApply converts only the user's current local Markdown resume version and does not send document contents to the package author or another service.
 

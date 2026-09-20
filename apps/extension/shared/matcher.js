@@ -72,9 +72,16 @@ export function analyzeJob(rawJob, profile) {
   let hardRequirementsMet = true;
 
   const roleMatches = profile.preferences.roles.filter((role) => includes(titleText, role) || includes(text, role));
+  const wechatQueryMatches = job.sourceType === "wechat-article"
+    ? profile.preferences.roles.filter((role) => (job.metadata?.matchedQueries ?? []).some((query) => includes(normalize(query), role)))
+    : [];
   if (roleMatches.length) {
     score += 20;
     strengths.push(`目标岗位匹配：${roleMatches.join("、")}`);
+  } else if (wechatQueryMatches.length) {
+    score += 10;
+    strengths.push(`公众号检索词命中：${wechatQueryMatches.join("、")}`);
+    warnings.push("搜索结果摘要未直接展示具体岗位，需打开原文确认岗位清单");
   } else if (profile.preferences.roles.length) {
     gaps.push(`岗位名称与目标方向“${profile.preferences.roles.join("、")}”没有直接匹配`);
   }
@@ -175,6 +182,7 @@ export function analyzeJob(rawJob, profile) {
 
   if (job.sourceType === "wechat-article" && !job.sourceVerified) {
     warnings.push("这是一条公众号招聘线索，请在投递前核对企业官网、届别和截止日期");
+    if (job.metadata?.articleType === "roundup") warnings.push("这是岗位汇总类文章，可能包含转载、群聊或失效入口");
   }
 
   if (job.description.length < 80) warnings.push("页面提取到的岗位描述较短，匹配结果可能不完整");

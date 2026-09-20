@@ -17,6 +17,7 @@ export function normalizeDiscoveryInstructions(input = {}, profile) {
     locations: splitList(input.locations).length ? splitList(input.locations) : profile.preferences.locations,
     industries: profile.preferences.industries ?? [],
     companyTypes: profile.preferences.companyTypes ?? [],
+    wechatKeywords: splitList(input.wechatKeywords),
     campusOnly: profile.preferences.campusOnly !== false,
     requiredKeywords: splitList(input.requiredKeywords).length
       ? splitList(input.requiredKeywords)
@@ -79,6 +80,36 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
 
   for (const provider of providers) {
     let fetched = 0;
+    if (provider.batchSearch) {
+      onProgress(`正在从${provider.name}进行多角度搜索…`);
+      try {
+        const output = await provider.search({
+          queries: instructions.queries,
+          locations: instructions.locations,
+          industries: instructions.industries,
+          companyTypes: instructions.companyTypes,
+          focusKeywords: instructions.wechatKeywords,
+          graduationYear: profile.preferences.graduationYear,
+          recentDays: instructions.recentDays,
+          page: 1,
+          pageSize: 60,
+        });
+        fetched += output.jobs.length;
+        summaries.push(...output.jobs.map((job) => ({ ...job, provider })));
+        errors.push(...(output.warnings ?? []).map((warning) => `${provider.name}：${warning}`));
+        sourceStats.push({
+          id: provider.id,
+          name: provider.name,
+          fetched,
+          searchedQueries: output.searchedQueries?.length ?? 0,
+          plannedQueries: output.searchPlan?.length ?? 0,
+        });
+      } catch (error) {
+        errors.push(`${provider.name}：${error.message}`);
+        sourceStats.push({ id: provider.id, name: provider.name, fetched });
+      }
+      continue;
+    }
     for (const query of instructions.queries) {
       onProgress(`正在从${provider.name}搜索“${query}”…`);
       try {
@@ -116,7 +147,11 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
     .filter(Boolean)
     .filter((job) => passesDetailFilter(job, instructions))
     .map((job) => ({ job, assessment: analyzeJob(job, profile) }))
-    .filter(({ assessment }) => assessment.score >= instructions.minimumScore)
+    .filter(({ job, assessment }) => {
+      if (job.sourceType !== "wechat-article") return assessment.score >= instructions.minimumScore;
+      const quality = Number(job.metadata?.qualityScore) || 0;
+      return quality >= 55 && assessment.score >= Math.min(50, instructions.minimumScore);
+    })
     .sort((a, b) => b.assessment.score - a.assessment.score)
     .slice(0, instructions.maxResults);
 
