@@ -30,6 +30,7 @@ for (const path of [
   "options.html", "options.js", "options.css", "popup.html", "popup.js", "popup.css",
   "discover.html", "discover.js", "discover.css",
   "prepare.html", "prepare.js", "prepare.css",
+  "dashboard.html", "dashboard.js", "dashboard.css",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
   "shared/application-workflow.js",

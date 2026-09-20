@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createEmptyProfile, normalizeProfile, splitList, validateProfile } from "./profile.js";
+import { createEmptyProfile, normalizeProfile, profileReadiness, splitList, validateProfile } from "./profile.js";
 
 test("splitList accepts Chinese punctuation and removes blanks", () => {
   assert.deepEqual(splitList("Python，SQL; 数据分析、Git"), ["Python", "SQL", "数据分析", "Git"]);
@@ -44,4 +44,16 @@ test("validateProfile reports the minimum required data", () => {
     "请至少填写一段教育经历",
     "请至少填写一项技能",
   ]);
+});
+
+test("profile readiness explains onboarding gaps", () => {
+  const profile = normalizeProfile({
+    personal: { fullName: "小秋", email: "x@example.com" },
+    education: [{ school: "测试大学" }], skills: ["Excel"],
+    preferences: { roles: ["管培生"], locations: ["上海"], graduationYear: "2027" },
+  });
+  const readiness = profileReadiness(profile);
+  assert.ok(readiness.score > 50);
+  assert.ok(readiness.missing.includes("实习或项目经历"));
+  assert.ok(readiness.missing.includes("行业、企业性质或排除条件"));
 });
