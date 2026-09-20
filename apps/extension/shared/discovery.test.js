@@ -146,3 +146,28 @@ test("candidate enrichment gives later providers a fair share of the budget", as
 
   assert.ok(output.results.some(({ job }) => job.id === "later-0"));
 });
+
+test("independent official sources search with bounded concurrency", async () => {
+  let active = 0;
+  let maximumActive = 0;
+  const provider = (id) => ({
+    id,
+    name: id,
+    search: async () => {
+      active += 1;
+      maximumActive = Math.max(maximumActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      active -= 1;
+      return { jobs: [] };
+    },
+    detail: async (job) => job,
+  });
+
+  await discoverJobs({
+    profile,
+    instructions: { queries: "数据分析" },
+    providers: [provider("one"), provider("two"), provider("three")],
+  });
+
+  assert.equal(maximumActive, 3);
+});
