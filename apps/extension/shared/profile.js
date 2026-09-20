@@ -1,4 +1,4 @@
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2;
 
 export function newId(prefix = "item") {
   const value = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -22,10 +22,20 @@ export function createEmptyProfile() {
     experiences: [],
     projects: [],
     skills: [],
+    qualifications: {
+      politicalStatus: "",
+      certificates: [],
+      languages: [],
+    },
     commonAnswers: [],
     preferences: {
       roles: [],
       locations: [],
+      industries: [],
+      companyTypes: [],
+      requiredKeywords: [],
+      excludedKeywords: [],
+      campusOnly: true,
       graduationYear: "",
       experienceYears: 0,
       minimumScore: 60,
@@ -77,6 +87,7 @@ export function normalizeProfile(input = {}) {
   const empty = createEmptyProfile();
   const personal = input.personal ?? {};
   const preferences = input.preferences ?? {};
+  const qualifications = input.qualifications ?? {};
 
   return {
     version: PROFILE_VERSION,
@@ -98,6 +109,11 @@ export function normalizeProfile(input = {}) {
       ? input.projects.map((item) => normalizeStory(item, "project"))
       : [],
     skills: splitList(input.skills),
+    qualifications: {
+      politicalStatus: cleanText(qualifications.politicalStatus),
+      certificates: splitList(qualifications.certificates),
+      languages: splitList(qualifications.languages),
+    },
     commonAnswers: Array.isArray(input.commonAnswers)
       ? input.commonAnswers.map((item) => ({
           id: cleanText(item.id) || newId("answer"),
@@ -108,6 +124,11 @@ export function normalizeProfile(input = {}) {
     preferences: {
       roles: splitList(preferences.roles),
       locations: splitList(preferences.locations),
+      industries: splitList(preferences.industries),
+      companyTypes: splitList(preferences.companyTypes),
+      requiredKeywords: splitList(preferences.requiredKeywords),
+      excludedKeywords: splitList(preferences.excludedKeywords),
+      campusOnly: preferences.campusOnly !== false,
       graduationYear: cleanText(preferences.graduationYear),
       experienceYears: Math.min(50, Math.max(0, Number(preferences.experienceYears) || 0)),
       minimumScore: Math.min(100, Math.max(0, Number(preferences.minimumScore) || 60)),

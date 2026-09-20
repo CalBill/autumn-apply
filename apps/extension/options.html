@@ -95,9 +95,19 @@
             <label>技能关键词<textarea name="skills" rows="4" placeholder="Python、SQL、数据分析"></textarea></label>
             <label>目标岗位<textarea name="roles" rows="4" placeholder="数据分析师、产品经理"></textarea></label>
             <label>目标城市<input name="locations" placeholder="上海、北京、深圳" /></label>
+            <label>行业偏好<input name="industries" placeholder="金融、航运、石油、海油" /></label>
+            <label>企业性质偏好<input name="companyTypes" placeholder="国企、央企、涉外企业" /></label>
+            <label>必须条件<input name="requiredKeywords" placeholder="校招、管培生" /></label>
+            <label>排除条件<input name="excludedKeywords" placeholder="销售、外包、两年以上全职经验" /></label>
             <label>毕业年份<input name="graduationYear" inputmode="numeric" placeholder="2027" /></label>
             <label>全职工作年限<input name="experienceYears" type="number" min="0" max="50" step="0.5" /><small>不含实习；应届生填写 0。</small></label>
             <label>最低匹配分数<input name="minimumScore" type="number" min="0" max="100" /></label>
+            <label class="check-label"><input name="campusOnly" type="checkbox" />只寻找校招／应届生岗位</label>
+          </div>
+          <div class="grid three qualification-grid">
+            <label>政治面貌<input name="politicalStatus" placeholder="中共党员／共青团员／群众" /></label>
+            <label>证书<input name="certificates" placeholder="法律职业资格A证、CPA" /></label>
+            <label>语言能力<input name="languages" placeholder="英语六级、雅思 7.0" /></label>
           </div>
         </section>
 

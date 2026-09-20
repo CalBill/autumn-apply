@@ -15,8 +15,15 @@ export function normalizeDiscoveryInstructions(input = {}, profile) {
   return {
     queries,
     locations: splitList(input.locations).length ? splitList(input.locations) : profile.preferences.locations,
-    requiredKeywords: splitList(input.requiredKeywords),
-    excludedKeywords: splitList(input.excludedKeywords),
+    industries: profile.preferences.industries ?? [],
+    companyTypes: profile.preferences.companyTypes ?? [],
+    campusOnly: profile.preferences.campusOnly !== false,
+    requiredKeywords: splitList(input.requiredKeywords).length
+      ? splitList(input.requiredKeywords)
+      : profile.preferences.requiredKeywords ?? [],
+    excludedKeywords: splitList(input.excludedKeywords).length
+      ? splitList(input.excludedKeywords)
+      : profile.preferences.excludedKeywords ?? [],
     minimumScore: Math.min(100, Math.max(0, Number(input.minimumScore) || profile.preferences.minimumScore || 60)),
     maxResults: Math.min(30, Math.max(1, Number(input.maxResults) || 15)),
     recentDays: Math.min(365, Math.max(1, Number(input.recentDays) || 90)),
@@ -43,6 +50,7 @@ function passesSummaryFilter(job, instructions) {
 
 function passesDetailFilter(job, instructions) {
   const text = `${job.title} ${job.company} ${job.location} ${job.description}`;
+  if (instructions.campusOnly && !containsAny(text, ["校招", "校园招聘", "应届", "毕业生", "届", "管培生"])) return false;
   if (instructions.requiredKeywords.length && !instructions.requiredKeywords.every((keyword) => containsAny(text, [keyword]))) return false;
   if (instructions.excludedKeywords.length && containsAny(text, instructions.excludedKeywords)) return false;
   return true;

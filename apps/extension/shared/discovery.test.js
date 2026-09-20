@@ -18,6 +18,20 @@ test("discovery instructions combine explicit queries with profile preferences",
   assert.deepEqual(instructions.excludedKeywords, ["高级", "负责人"]);
 });
 
+test("discovery inherits durable candidate filters", () => {
+  const profile = normalizeProfile({
+    preferences: {
+      roles: ["合规"], locations: ["上海"], industries: ["金融"], companyTypes: ["央企"],
+      requiredKeywords: ["校招"], excludedKeywords: ["销售", "外包"], campusOnly: true,
+    },
+  });
+  const instructions = normalizeDiscoveryInstructions({}, profile);
+  assert.deepEqual(instructions.requiredKeywords, ["校招"]);
+  assert.deepEqual(instructions.excludedKeywords, ["销售", "外包"]);
+  assert.deepEqual(instructions.industries, ["金融"]);
+  assert.equal(instructions.campusOnly, true);
+});
+
 test("discovery filters, enriches and ranks real job shapes", async () => {
   const provider = {
     id: "fixture",

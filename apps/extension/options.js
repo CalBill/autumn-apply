@@ -86,9 +86,19 @@ function collectProfile() {
     projects: [...lists.projects.querySelectorAll("[data-entry='story']")].map(entryData),
     commonAnswers: [...lists.commonAnswers.querySelectorAll("[data-entry='answer']")].map(entryData),
     skills: splitList(named.get("skills")),
+    qualifications: {
+      politicalStatus: named.get("politicalStatus"),
+      certificates: splitList(named.get("certificates")),
+      languages: splitList(named.get("languages")),
+    },
     preferences: {
       roles: splitList(named.get("roles")),
       locations: splitList(named.get("locations")),
+      industries: splitList(named.get("industries")),
+      companyTypes: splitList(named.get("companyTypes")),
+      requiredKeywords: splitList(named.get("requiredKeywords")),
+      excludedKeywords: splitList(named.get("excludedKeywords")),
+      campusOnly: named.get("campusOnly") === "on",
       graduationYear: named.get("graduationYear"),
       experienceYears: named.get("experienceYears"),
       minimumScore: named.get("minimumScore"),
@@ -105,9 +115,17 @@ function renderProfile(profile) {
   form.elements.namedItem("skills").value = profile.skills.join("、");
   form.elements.namedItem("roles").value = profile.preferences.roles.join("、");
   form.elements.namedItem("locations").value = profile.preferences.locations.join("、");
+  form.elements.namedItem("industries").value = profile.preferences.industries.join("、");
+  form.elements.namedItem("companyTypes").value = profile.preferences.companyTypes.join("、");
+  form.elements.namedItem("requiredKeywords").value = profile.preferences.requiredKeywords.join("、");
+  form.elements.namedItem("excludedKeywords").value = profile.preferences.excludedKeywords.join("、");
+  form.elements.namedItem("campusOnly").checked = profile.preferences.campusOnly;
   form.elements.namedItem("graduationYear").value = profile.preferences.graduationYear;
   form.elements.namedItem("experienceYears").value = profile.preferences.experienceYears;
   form.elements.namedItem("minimumScore").value = profile.preferences.minimumScore;
+  form.elements.namedItem("politicalStatus").value = profile.qualifications.politicalStatus;
+  form.elements.namedItem("certificates").value = profile.qualifications.certificates.join("、");
+  form.elements.namedItem("languages").value = profile.qualifications.languages.join("、");
 
   for (const list of Object.values(lists)) list.replaceChildren();
   profile.education.forEach(addEducation);
@@ -287,10 +305,19 @@ aiStructureButton.addEventListener("click", async () => {
       experiences: current.experiences.length ? current.experiences : draft.experiences,
       projects: current.projects.length ? current.projects : draft.projects,
       skills: [...new Set([...current.skills, ...(draft.skills ?? [])])],
+      qualifications: {
+        politicalStatus: current.qualifications.politicalStatus || draft.qualifications?.politicalStatus,
+        certificates: [...new Set([...current.qualifications.certificates, ...(draft.qualifications?.certificates ?? [])])],
+        languages: [...new Set([...current.qualifications.languages, ...(draft.qualifications?.languages ?? [])])],
+      },
       preferences: {
         ...current.preferences,
         roles: current.preferences.roles.length ? current.preferences.roles : draft.preferences?.roles,
         locations: current.preferences.locations.length ? current.preferences.locations : draft.preferences?.locations,
+        industries: current.preferences.industries.length ? current.preferences.industries : draft.preferences?.industries,
+        companyTypes: current.preferences.companyTypes.length ? current.preferences.companyTypes : draft.preferences?.companyTypes,
+        requiredKeywords: current.preferences.requiredKeywords.length ? current.preferences.requiredKeywords : draft.preferences?.requiredKeywords,
+        excludedKeywords: current.preferences.excludedKeywords.length ? current.preferences.excludedKeywords : draft.preferences?.excludedKeywords,
         graduationYear: current.preferences.graduationYear || draft.preferences?.graduationYear,
       },
     });

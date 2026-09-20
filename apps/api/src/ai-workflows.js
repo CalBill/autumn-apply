@@ -32,13 +32,21 @@ export const RESUME_PROFILE_SCHEMA = {
       },
     },
     skills: STRING_ARRAY,
+    qualifications: {
+      type: "object", additionalProperties: false,
+      properties: { politicalStatus: STRING, certificates: STRING_ARRAY, languages: STRING_ARRAY },
+      required: ["politicalStatus", "certificates", "languages"],
+    },
     preferences: {
       type: "object", additionalProperties: false,
-      properties: { roles: STRING_ARRAY, locations: STRING_ARRAY, graduationYear: STRING },
-      required: ["roles", "locations", "graduationYear"],
+      properties: {
+        roles: STRING_ARRAY, locations: STRING_ARRAY, industries: STRING_ARRAY, companyTypes: STRING_ARRAY,
+        requiredKeywords: STRING_ARRAY, excludedKeywords: STRING_ARRAY, graduationYear: STRING,
+      },
+      required: ["roles", "locations", "industries", "companyTypes", "requiredKeywords", "excludedKeywords", "graduationYear"],
     },
   },
-  required: ["personal", "education", "experiences", "projects", "skills", "preferences"],
+  required: ["personal", "education", "experiences", "projects", "skills", "qualifications", "preferences"],
 };
 
 export const MATCH_SCHEMA = {
@@ -91,8 +99,15 @@ export function sanitizeProfileForModel(profile = {}) {
     experiences: stories(profile.experiences),
     projects: stories(profile.projects),
     skills: strings(profile.skills, 80),
+    qualifications: {
+      politicalStatus: text(profile.qualifications?.politicalStatus, 100),
+      certificates: strings(profile.qualifications?.certificates, 30),
+      languages: strings(profile.qualifications?.languages, 30),
+    },
     preferences: {
       roles: strings(profile.preferences?.roles, 30), locations: strings(profile.preferences?.locations, 30),
+      industries: strings(profile.preferences?.industries, 30), companyTypes: strings(profile.preferences?.companyTypes, 30),
+      requiredKeywords: strings(profile.preferences?.requiredKeywords, 30), excludedKeywords: strings(profile.preferences?.excludedKeywords, 30),
       graduationYear: text(profile.preferences?.graduationYear, 10), experienceYears: Number(profile.preferences?.experienceYears) || 0,
     },
   };
