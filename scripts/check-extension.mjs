@@ -15,6 +15,7 @@ const allowedHosts = new Set([
   "https://api.eu.lever.co/*",
   "https://api.ashbyhq.com/*",
   "https://weixin.sogou.com/*",
+  "http://127.0.0.1:43127/*",
 ]);
 for (const host of manifest.host_permissions ?? []) {
   if (!allowedHosts.has(host)) throw new Error(`Unexpected extension host permission: ${host}`);

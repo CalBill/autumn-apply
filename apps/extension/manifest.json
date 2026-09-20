@@ -19,7 +19,8 @@
     "https://api.lever.co/*",
     "https://api.eu.lever.co/*",
     "https://api.ashbyhq.com/*",
-    "https://weixin.sogou.com/*"
+    "https://weixin.sogou.com/*",
+    "http://127.0.0.1:43127/*"
   ],
   "action": {
     "default_title": "AutumnApply",
