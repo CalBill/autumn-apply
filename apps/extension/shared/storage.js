@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   draft: "currentDraft",
   discovery: "lastDiscovery",
   companySources: "companySources",
+  searchMonitor: "searchMonitor",
 };
 
 function storageArea() {
@@ -73,4 +74,14 @@ export async function saveCompanySources(sources) {
     : [];
   await storageArea().set({ [STORAGE_KEYS.companySources]: normalized });
   return normalized;
+}
+
+export async function loadSearchMonitor() {
+  const result = await storageArea().get(STORAGE_KEYS.searchMonitor);
+  return result[STORAGE_KEYS.searchMonitor] ?? null;
+}
+
+export async function saveSearchMonitor(monitor) {
+  await storageArea().set({ [STORAGE_KEYS.searchMonitor]: monitor });
+  return monitor;
 }

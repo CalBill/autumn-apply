@@ -3,7 +3,8 @@ import { createPreparationQuestions, mergePreparationQuestions } from "./shared/
 import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
-import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, saveApplications, saveCompanySources, saveDiscovery } from "./shared/storage.js";
+import { normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
+import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, loadSearchMonitor, saveApplications, saveCompanySources, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
 import { analyzeJobWithAi, searchJobsWithAi } from "./shared/local-api.js";
 
 const form = document.querySelector("#search-form");
@@ -18,6 +19,7 @@ let profile = await loadProfile();
 let applications = await loadApplications();
 let discovery = await loadDiscovery();
 let companySources = await loadCompanySources();
+let searchMonitor = normalizeSearchMonitor(await loadSearchMonitor());
 
 function list(element, items, emptyText) {
   element.replaceChildren();
@@ -116,6 +118,23 @@ function readInstructions() {
   return Object.fromEntries(data.entries());
 }
 
+async function saveMonitor(instructions, results) {
+  searchMonitor = updateMonitorAfterSearch({
+    ...searchMonitor,
+    enabled: form.elements.monitorEnabled.checked,
+    intervalHours: Number(form.elements.intervalHours.value),
+    instructions,
+  }, results, { searchedAt: new Date().toISOString() });
+  await saveSearchMonitor({ ...searchMonitor, newJobs: undefined });
+  await chrome.alarms.clear(SEARCH_ALARM_NAME);
+  if (searchMonitor.enabled) {
+    chrome.alarms.create(SEARCH_ALARM_NAME, { periodInMinutes: searchMonitor.intervalHours * 60 });
+    document.querySelector("#monitor-status").textContent = `已保存：每 ${searchMonitor.intervalHours} 小时检查一次；后台不会调用 AI。`;
+  } else {
+    document.querySelector("#monitor-status").textContent = "自动检查未开启。后台不会运行搜索。";
+  }
+}
+
 function fillInstructions(instructions) {
   form.elements.queries.value = instructions.queries.join("、");
   form.elements.locations.value = instructions.locations.join("、");
@@ -143,6 +162,7 @@ form.addEventListener("submit", async (event) => {
       onProgress: (message) => { statusElement.textContent = message; },
     });
     discovery = await saveDiscovery(output);
+    await saveMonitor(output.instructions, output.results);
     renderResults(discovery);
     statusElement.textContent = `完成于 ${new Date(output.searchedAt).toLocaleTimeString()}`;
   } catch (error) {
@@ -200,6 +220,13 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
 });
 
 form.elements.companySources.value = serializeCompanySources(companySources);
+form.elements.monitorEnabled.checked = searchMonitor.enabled;
+form.elements.intervalHours.value = String(searchMonitor.intervalHours);
+if (searchMonitor.lastRunAt) {
+  document.querySelector("#monitor-status").textContent = searchMonitor.lastError
+    ? `上次检查失败：${searchMonitor.lastError}`
+    : `上次检查：${new Date(searchMonitor.lastRunAt).toLocaleString()}；后台不会调用 AI。`;
+}
 
 if (!profileHasUsefulData(profile)) {
   button.disabled = true;

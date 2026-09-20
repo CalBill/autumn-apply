@@ -21,7 +21,7 @@ for (const host of manifest.host_permissions ?? []) {
   if (!allowedHosts.has(host)) throw new Error(`Unexpected extension host permission: ${host}`);
 }
 
-const allowedPermissions = new Set(["activeTab", "downloads", "scripting", "storage"]);
+const allowedPermissions = new Set(["activeTab", "alarms", "downloads", "notifications", "scripting", "storage"]);
 for (const permission of manifest.permissions ?? []) {
   if (!allowedPermissions.has(permission)) throw new Error(`Unexpected extension permission: ${permission}`);
 }
@@ -32,6 +32,7 @@ for (const path of [
   "prepare.html", "prepare.js", "prepare.css",
   "dashboard.html", "dashboard.js", "dashboard.css",
   "print-resume.html", "print-resume.js", "print-resume.css",
+  "background.js", "icon.svg", "shared/search-monitor.js",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
   "shared/application-workflow.js",
