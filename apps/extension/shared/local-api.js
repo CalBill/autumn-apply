@@ -62,6 +62,13 @@ export function createApplicationPackageWithAi(profile, job, supplementalAnswers
   });
 }
 
+export function exportResumeDocx(markdown, title) {
+  return request("/v1/documents/docx", {
+    method: "POST",
+    body: JSON.stringify({ markdown, title }),
+  });
+}
+
 export function searchJobsWithAi(profile, instructions) {
   return request("/v1/ai/search", { method: "POST", body: JSON.stringify({ profile, instructions }) });
 }

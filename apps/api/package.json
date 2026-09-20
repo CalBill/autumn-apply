@@ -5,6 +5,7 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
+    "docx": "^9.7.1",
     "mammoth": "^1.10.0",
     "pdfjs-dist": "^6.2.108"
   }

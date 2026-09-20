@@ -4,6 +4,7 @@ import { createProviderSettingsStore } from "./provider-settings.js";
 import { createConfiguredModelFactory } from "./model-client.js";
 import { analyzeSemanticMatch, createAiApplicationPackage, structureResumeWithAi } from "./ai-workflows.js";
 import { searchJobsWithAi } from "./web-search.js";
+import { markdownResumeToDocx } from "./document-export.js";
 
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_PORT = 43127;
@@ -83,6 +84,16 @@ export function createLocalApiServer({ parseResume = parseResumeBuffer, settings
           mimeType: String(body.mimeType || ""),
         });
         writeJson(response, 200, result, origin);
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/v1/documents/docx") {
+        const body = await readJson(request);
+        const document = await markdownResumeToDocx(body.markdown, body.title);
+        writeJson(response, 200, {
+          filename: `${String(body.title || "AutumnApply-岗位版简历").replace(/[\\/:*?"<>|]/g, "-").slice(0, 120)}.docx`,
+          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          dataBase64: document.toString("base64"),
+        }, origin);
         return;
       }
       if (request.method === "GET" && url.pathname === "/v1/settings/provider") {
