@@ -12,6 +12,7 @@
   "scripts": {
     "build": "npm run build:extension",
     "build:extension": "node scripts/build-extension.mjs",
+    "launch": "node scripts/launch.mjs",
     "check": "node scripts/check-scaffold.mjs && node scripts/check-extension.mjs",
     "start:api": "node apps/api/src/server.js",
     "preview:fixture": "node scripts/serve-fixture.mjs",
