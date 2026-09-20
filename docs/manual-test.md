@@ -4,7 +4,7 @@ This checklist exercises the complete MVP without using a real recruitment websi
 
 ## 1. Launch, build and load
 
-On macOS, double-click `AutumnApply.command`. Confirm it builds the extension, reports the local API version, opens `chrome://extensions`, and reveals `dist/extension`. On any supported development system, the equivalent command is:
+On macOS, double-click `AutumnApply.command`. On Windows, double-click `AutumnApply.cmd`. Confirm it checks Node.js, installs dependencies on first use, builds the extension, reports the local API version, opens `chrome://extensions`, and reveals `dist/extension`. If Chrome is not in a standard Windows install location, confirm the launcher gives manual loading instructions instead of failing. On any supported development system, the equivalent command is:
 
 ```bash
 npm run launch
@@ -51,7 +51,7 @@ Optionally import a text-based PDF or DOCX resume. Confirm local parsing fills o
 
 1. Keep this step skipped to confirm the rest of the extension works without any API key.
 2. If testing BYOK, choose OpenAI or DeepSeek in the options page and enter a test key.
-3. Confirm the key is not shown again after saving and is present in macOS Keychain rather than Chrome storage.
+3. Confirm the key is not shown again after saving and is present in macOS Keychain or Windows current-user DPAPI storage rather than Chrome storage.
 4. Click **测试连接** and confirm the provider/model result is displayed.
 5. Delete the key and confirm AI requests fail with a clear configuration message.
 

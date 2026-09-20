@@ -34,14 +34,14 @@
 ## Milestone 1.5 — Optional BYOK intelligence
 
 - [x] Loopback-only local API service
-- [x] macOS Keychain storage and environment-variable fallback
+- [x] macOS Keychain, Windows DPAPI and environment-variable secret storage
 - [x] OpenAI and DeepSeek Responses-compatible clients
 - [x] Explicit AI resume structuring with strict schemas
 - [x] Privacy-minimized semantic matching and hard-requirement extraction
 - [x] OpenAI hosted web search with citation and public-URL verification
 - [x] Grounded AI application package with source-id validation
 - [ ] OCR for scanned resumes
-- [ ] Linux Secret Service and Windows Credential Manager persistence
+- [ ] Linux Secret Service persistence
 
 ## Milestone 2 — China recruitment adapters
 
@@ -64,7 +64,7 @@
 
 ## Milestone 3.5 — Usability v0.6
 
-- [x] One-click macOS launcher for build, local API and extension setup
+- [x] One-click macOS and Windows launchers for build, local API and extension setup
 - [x] Guided onboarding and unified local dashboard
 - [x] DOCX resume export and PDF-ready print view
 - [x] Saved basic searches with new-job and seven-day deadline alerts

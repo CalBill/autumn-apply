@@ -23,7 +23,7 @@ Current endpoints:
 
 PDF, DOCX, TXT and Markdown files are parsed locally. The service rejects payloads over 22 MB and resume files over 15 MB. Browser requests are accepted only from Chrome extensions and localhost origins.
 
-On macOS, BYOK secrets are stored in Keychain under `dev.autumn-apply.api-key`. Only provider, official base URL and model name are written to `~/.config/autumn-apply/provider.json` with mode `0600`. Other platforms can provide `OPENAI_API_KEY` or `DEEPSEEK_API_KEY` through the environment; plaintext key files are intentionally unsupported.
+On macOS, BYOK secrets are stored in Keychain under `dev.autumn-apply.api-key`. On Windows, the secret is encrypted with DPAPI's `CurrentUser` scope before the ciphertext is stored under `%APPDATA%\AutumnApply`; another Windows account cannot decrypt it. Only provider, official base URL and model name are stored as ordinary configuration. Linux can provide `OPENAI_API_KEY` or `DEEPSEEK_API_KEY` through the environment; plaintext key files are intentionally unsupported.
 
 OpenAI and DeepSeek use their official Responses-compatible endpoints. Requests set `store: false`; API keys stay inside the local service and are never returned to the extension.
 
