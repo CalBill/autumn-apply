@@ -20,6 +20,7 @@
     "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "linkedom": "^0.18.12",
     "typescript": "^5.9.2"
   },
   "engines": {
