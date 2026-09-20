@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createLocalApiServer, listen } from "../src/http.js";
 
-async function withServer(parseResume, callback) {
+async function withServer(parseResume, callback, modelFactory) {
   const settings = {
     status: async () => ({ provider: "openai", model: "test", apiKeyConfigured: false }),
     update: async (value) => ({ provider: value.provider, model: value.model, apiKeyConfigured: Boolean(value.apiKey) }),
     removeKey: async () => ({ provider: "openai", model: "test", apiKeyConfigured: false }),
   };
-  const server = createLocalApiServer({ parseResume, settings });
+  const server = createLocalApiServer({ parseResume, settings, modelFactory });
   const address = await listen(server, { port: 0 });
   try {
     await callback(`http://127.0.0.1:${address.port}`);
@@ -56,4 +56,14 @@ test("provider settings expose status but never echo the API key", async () => {
     assert.equal(body.apiKeyConfigured, true);
     assert.equal(body.apiKey, undefined);
   });
+});
+
+test("AI test endpoint returns provider status without exposing credentials", async () => {
+  const modelFactory = async () => ({ createResponse: async () => ({ text: "连接成功", usage: { total_tokens: 3 } }) });
+  await withServer(undefined, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/v1/ai/test`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    assert.deepEqual(await response.json(), {
+      ok: true, provider: "openai", model: "test", message: "连接成功", usage: { total_tokens: 3 },
+    });
+  }, modelFactory);
 });

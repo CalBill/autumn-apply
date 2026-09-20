@@ -1,6 +1,7 @@
 import http from "node:http";
 import { parseResumeBuffer } from "./resume-parser.js";
 import { createProviderSettingsStore } from "./provider-settings.js";
+import { createConfiguredModelFactory } from "./model-client.js";
 
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_PORT = 43127;
@@ -45,7 +46,8 @@ function decodeBase64(value) {
   return buffer;
 }
 
-export function createLocalApiServer({ parseResume = parseResumeBuffer, settings = createProviderSettingsStore() } = {}) {
+export function createLocalApiServer({ parseResume = parseResumeBuffer, settings = createProviderSettingsStore(), modelFactory } = {}) {
+  const configuredModelFactory = modelFactory ?? createConfiguredModelFactory({ settings });
   return http.createServer(async (request, response) => {
     const origin = request.headers.origin ?? "";
     if (!allowedOrigin(origin)) {
@@ -91,6 +93,16 @@ export function createLocalApiServer({ parseResume = parseResumeBuffer, settings
       }
       if (request.method === "DELETE" && url.pathname === "/v1/settings/provider/key") {
         writeJson(response, 200, await settings.removeKey(), origin);
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/v1/ai/test") {
+        const model = await configuredModelFactory();
+        const result = await model.createResponse({
+          instructions: "Reply with exactly the Chinese word：连接成功",
+          input: "Test this API connection.",
+        });
+        const status = await settings.status();
+        writeJson(response, 200, { ok: true, provider: status.provider, model: status.model, message: result.text.slice(0, 120), usage: result.usage }, origin);
         return;
       }
       writeJson(response, 404, { error: "接口不存在" }, origin);

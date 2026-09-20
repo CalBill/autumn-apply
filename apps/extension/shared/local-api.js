@@ -42,3 +42,7 @@ export function saveProviderSettings(settings) {
 export function deleteProviderKey() {
   return request("/v1/settings/provider/key", { method: "DELETE" });
 }
+
+export function testProviderConnection() {
+  return request("/v1/ai/test", { method: "POST", body: "{}" });
+}

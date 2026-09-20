@@ -1,7 +1,7 @@
 import { createEmptyProfile, newId, normalizeProfile, splitList, validateProfile } from "./shared/profile.js";
 import { STATUS_LABELS } from "./shared/applications.js";
 import { clearLocalData, loadApplications, loadProfile, saveProfile } from "./shared/storage.js";
-import { deleteProviderKey, getLocalApiHealth, getProviderSettings, parseResumeFile, saveProviderSettings } from "./shared/local-api.js";
+import { deleteProviderKey, getLocalApiHealth, getProviderSettings, parseResumeFile, saveProviderSettings, testProviderConnection } from "./shared/local-api.js";
 
 const form = document.querySelector("#profile-form");
 const status = document.querySelector("#save-status");
@@ -285,6 +285,16 @@ document.querySelector("#delete-provider-key").addEventListener("click", async (
     await deleteProviderKey();
     providerForm.elements.apiKey.value = "";
     showIntegrationStatus(providerStatus, "密钥已从安全存储删除", "success");
+  } catch (error) {
+    showIntegrationStatus(providerStatus, error.message, "error");
+  }
+});
+
+document.querySelector("#test-provider").addEventListener("click", async () => {
+  try {
+    showIntegrationStatus(providerStatus, "正在测试模型连接；这会产生一次很小的API调用…");
+    const result = await testProviderConnection();
+    showIntegrationStatus(providerStatus, `${result.provider} · ${result.model}：${result.message}`, "success");
   } catch (error) {
     showIntegrationStatus(providerStatus, error.message, "error");
   }
