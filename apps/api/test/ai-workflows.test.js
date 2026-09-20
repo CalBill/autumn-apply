@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { analyzeSemanticMatch, sanitizeProfileForModel, structureResumeWithAi } from "../src/ai-workflows.js";
+import { analyzeSemanticMatch, createAiApplicationPackage, sanitizeProfileForModel, structureResumeWithAi } from "../src/ai-workflows.js";
 
 test("model profile omits direct identity and contact fields", () => {
   const safe = sanitizeProfileForModel({
@@ -30,4 +30,28 @@ test("resume structuring explicitly forbids invented facts", async () => {
   const model = { generateStructured: async (value) => { instructions = value.instructions; return { data: { personal: {}, education: [], experiences: [], projects: [], skills: [], preferences: {} } }; } };
   await structureResumeWithAi({ resumeText: "张三的真实简历内容足够长，包含清晰的教育经历、实习经历、项目经历、技能证书以及对应的起止时间。", model });
   assert.match(instructions, /不推测、不美化、不补全/);
+});
+
+test("application package rejects story rewrites without a real source id", async () => {
+  let instructions;
+  const model = { generateStructured: async (value) => {
+    instructions = value.instructions;
+    return { data: {
+      summary: "适合申请", experiences: [
+        { sourceId: "experience-real", bullets: ["改写真实经历"], rationale: "匹配" },
+        { sourceId: "invented", bullets: ["虚构内容"], rationale: "无来源" },
+      ], projects: [], missingQuestions: [], openQuestionDrafts: [], warnings: [],
+    } };
+  } };
+  const result = await createAiApplicationPackage({
+    profile: {
+      experiences: [{ id: "experience-real", title: "实习生", organization: "示例公司", highlights: ["整理合规资料"] }],
+      projects: [], education: [], skills: ["合规"], preferences: {}, qualifications: {},
+    },
+    job: { title: "合规岗", company: "目标公司", description: "负责合规资料审查和风险识别" },
+    supplementalAnswers: [{ subject: "法律资格", answer: "没有A证", confirmed: true }], model,
+  });
+  assert.match(instructions, /不得增加数字、结果、职责、证书或经历/);
+  assert.deepEqual(result.package.experiences.map((item) => item.sourceId), ["experience-real"]);
+  assert.ok(!result.disclosedFields.includes("personal"));
 });

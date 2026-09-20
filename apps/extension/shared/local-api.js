@@ -55,6 +55,13 @@ export function analyzeJobWithAi(profile, job) {
   return request("/v1/ai/match", { method: "POST", body: JSON.stringify({ profile, job }) });
 }
 
+export function createApplicationPackageWithAi(profile, job, supplementalAnswers = []) {
+  return request("/v1/ai/application-package", {
+    method: "POST",
+    body: JSON.stringify({ profile, job, supplementalAnswers }),
+  });
+}
+
 export function searchJobsWithAi(profile, instructions) {
   return request("/v1/ai/search", { method: "POST", body: JSON.stringify({ profile, instructions }) });
 }

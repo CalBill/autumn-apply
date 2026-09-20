@@ -75,6 +75,44 @@ export const MATCH_SCHEMA = {
   required: ["score", "summary", "recommendation", "hardRequirements", "strengths", "gaps", "warnings"],
 };
 
+export const APPLICATION_PACKAGE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    summary: STRING,
+    experiences: {
+      type: "array", items: {
+        type: "object", additionalProperties: false,
+        properties: { sourceId: STRING, bullets: STRING_ARRAY, rationale: STRING },
+        required: ["sourceId", "bullets", "rationale"],
+      },
+    },
+    projects: {
+      type: "array", items: {
+        type: "object", additionalProperties: false,
+        properties: { sourceId: STRING, bullets: STRING_ARRAY, rationale: STRING },
+        required: ["sourceId", "bullets", "rationale"],
+      },
+    },
+    missingQuestions: {
+      type: "array", items: {
+        type: "object", additionalProperties: false,
+        properties: { subject: STRING, question: STRING, reason: STRING },
+        required: ["subject", "question", "reason"],
+      },
+    },
+    openQuestionDrafts: {
+      type: "array", items: {
+        type: "object", additionalProperties: false,
+        properties: { question: STRING, answer: STRING, evidenceSourceIds: STRING_ARRAY },
+        required: ["question", "answer", "evidenceSourceIds"],
+      },
+    },
+    warnings: STRING_ARRAY,
+  },
+  required: ["summary", "experiences", "projects", "missingQuestions", "openQuestionDrafts", "warnings"],
+};
+
 function text(value, limit = 8_000) {
   return String(value ?? "").trim().slice(0, limit);
 }
@@ -85,7 +123,7 @@ function strings(values, limit = 20) {
 
 function stories(values) {
   return Array.isArray(values) ? values.slice(0, 20).map((item) => ({
-    title: text(item.title, 300), organization: text(item.organization, 300), startDate: text(item.startDate, 30), endDate: text(item.endDate, 30),
+    id: text(item.id, 200), title: text(item.title, 300), organization: text(item.organization, 300), startDate: text(item.startDate, 30), endDate: text(item.endDate, 30),
     summary: text(item.summary, 2_000), highlights: strings(item.highlights, 12), keywords: strings(item.keywords, 20),
   })) : [];
 }
@@ -143,4 +181,36 @@ export async function analyzeSemanticMatch({ profile, job, model }) {
     input: JSON.stringify({ candidate: safeProfile, job: safeJob }),
   });
   return { assessment: result.data, disclosedFields: Object.keys(safeProfile), responseId: result.responseId, usage: result.usage };
+}
+
+export async function createAiApplicationPackage({ profile, job, supplementalAnswers = [], model }) {
+  const safeProfile = sanitizeProfileForModel(profile);
+  const safeJob = sanitizeJobForModel(job);
+  const answers = Array.isArray(supplementalAnswers) ? supplementalAnswers
+    .filter((item) => item?.confirmed === true && text(item.answer, 4_000))
+    .slice(0, 20)
+    .map((item) => ({ subject: text(item.subject, 300), answer: text(item.answer, 4_000) })) : [];
+  if (!safeJob.title || !safeJob.description) throw Object.assign(new Error("岗位名称和岗位描述不能为空"), { statusCode: 400 });
+  const result = await model.generateStructured({
+    schemaName: "application_package",
+    schema: APPLICATION_PACKAGE_SCHEMA,
+    instructions: "你是严格、保守的中文校招材料编辑器。只能重组和改写候选人资料及用户明确确认的补充事实，不得增加数字、结果、职责、证书或经历。每组改写必须引用真实存在的sourceId；证据不足时提出问题，不得自行补全。改写使用清晰的行动—方法—结果结构，但原文没有结果时不能虚构结果。开放题草稿也必须列出证据sourceId。所有输出都需要用户最终核对。",
+    input: JSON.stringify({ candidate: safeProfile, confirmedSupplementalFacts: answers, job: safeJob }),
+  });
+  const validIds = new Set([...safeProfile.experiences, ...safeProfile.projects].map((item) => item.id).filter(Boolean));
+  const filterStories = (items) => Array.isArray(items)
+    ? items.filter((item) => validIds.has(item.sourceId)).map((item) => ({
+      ...item, bullets: strings(item.bullets, 12), rationale: text(item.rationale, 1_000),
+    }))
+    : [];
+  const data = {
+    ...result.data,
+    experiences: filterStories(result.data.experiences),
+    projects: filterStories(result.data.projects),
+    openQuestionDrafts: (result.data.openQuestionDrafts ?? []).map((item) => ({
+      ...item,
+      evidenceSourceIds: strings(item.evidenceSourceIds, 20).filter((id) => validIds.has(id)),
+    })),
+  };
+  return { package: data, disclosedFields: Object.keys(safeProfile), responseId: result.responseId, usage: result.usage };
 }

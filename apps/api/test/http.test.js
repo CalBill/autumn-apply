@@ -81,3 +81,20 @@ test("AI match endpoint returns a structured assessment", async () => {
     assert.equal(body.responseId, "resp_match");
   }, modelFactory);
 });
+
+test("AI application package endpoint returns source-grounded material", async () => {
+  const modelFactory = async () => ({
+    generateStructured: async () => ({ data: {
+      summary: "完成", experiences: [], projects: [], missingQuestions: [], openQuestionDrafts: [], warnings: [],
+    } }),
+  });
+  await withServer(undefined, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/v1/ai/application-package`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile: { education: [], experiences: [], projects: [], skills: [], preferences: {} }, job: { title: "管培生", description: "校园招聘管培生岗位" } }),
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.package.summary, "完成");
+  }, modelFactory);
+});
