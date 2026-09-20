@@ -3,6 +3,7 @@ import { parseResumeBuffer } from "./resume-parser.js";
 import { createProviderSettingsStore } from "./provider-settings.js";
 import { createConfiguredModelFactory } from "./model-client.js";
 import { analyzeSemanticMatch, structureResumeWithAi } from "./ai-workflows.js";
+import { searchJobsWithAi } from "./web-search.js";
 
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_PORT = 43127;
@@ -116,6 +117,13 @@ export function createLocalApiServer({ parseResume = parseResumeBuffer, settings
         const body = await readJson(request);
         const model = await configuredModelFactory();
         writeJson(response, 200, await analyzeSemanticMatch({ profile: body.profile, job: body.job, model }), origin);
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/v1/ai/search") {
+        const body = await readJson(request);
+        const model = await configuredModelFactory();
+        const provider = (await settings.status()).provider;
+        writeJson(response, 200, await searchJobsWithAi({ profile: body.profile, instructions: body.instructions, model, provider }), origin);
         return;
       }
       writeJson(response, 404, { error: "接口不存在" }, origin);

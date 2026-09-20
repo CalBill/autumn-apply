@@ -14,7 +14,7 @@ function endpoint(baseUrl, resource) {
 export function createModelClient({ credentials, fetchImpl = fetch, timeoutMs = 60_000 }) {
   if (!credentials?.apiKey) throw new Error("缺少模型服务API Key");
 
-  async function createResponse({ instructions, input, schema, schemaName = "autumn_apply_result", tools = [], toolChoice }) {
+  async function createResponse({ instructions, input, schema, schemaName = "autumn_apply_result", tools = [], toolChoice, include = [] }) {
     const body = {
       model: credentials.model,
       instructions,
@@ -25,6 +25,7 @@ export function createModelClient({ credentials, fetchImpl = fetch, timeoutMs = 
       } : {}),
       ...(tools.length ? { tools } : {}),
       ...(toolChoice ? { tool_choice: toolChoice } : {}),
+      ...(include.length ? { include } : {}),
     };
     const response = await fetchImpl(endpoint(credentials.baseUrl, "responses"), {
       method: "POST",

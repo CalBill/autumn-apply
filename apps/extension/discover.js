@@ -3,7 +3,7 @@ import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
 import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, saveApplications, saveCompanySources, saveDiscovery } from "./shared/storage.js";
-import { analyzeJobWithAi } from "./shared/local-api.js";
+import { analyzeJobWithAi, searchJobsWithAi } from "./shared/local-api.js";
 
 const form = document.querySelector("#search-form");
 const button = document.querySelector("#search-button");
@@ -129,6 +129,45 @@ form.addEventListener("submit", async (event) => {
     statusElement.textContent = "";
   } finally {
     button.disabled = false;
+  }
+});
+
+document.querySelector("#ai-search-button").addEventListener("click", async (event) => {
+  const aiButton = event.currentTarget;
+  aiButton.disabled = true;
+  statusElement.textContent = "AI正在联网检索并逐条核验来源…";
+  try {
+    const instructions = normalizeDiscoveryInstructions(readInstructions(), profile);
+    const output = await searchJobsWithAi(profile, {
+      roles: instructions.queries,
+      locations: instructions.locations,
+      requiredKeywords: instructions.requiredKeywords,
+      excludedKeywords: instructions.excludedKeywords,
+      maximumResults: Math.min(20, instructions.maxResults),
+    });
+    renderResults({
+      results: output.opportunities.map((item) => ({
+        job: {
+          id: item.id, providerId: item.sourceUrl, title: item.title, company: item.company, location: item.location,
+          description: item.description, sourceUrl: item.sourceUrl, sourcePlatform: `AI联网检索 · ${item.verification.status}`,
+          sourceType: "ai-web-search", sourceVerified: item.verification.status === "verified", publishedAt: item.publishedAt,
+        },
+        assessment: {
+          score: item.matchScore, strengths: [item.matchReason], gaps: item.hardRequirementRisk ? [item.hardRequirementRisk] : [],
+          warnings: item.verification.status === "verified" ? [] : ["来源页面可达，但正文信号尚未完全核验"],
+        },
+      })),
+      sourceStats: [{ name: "AI联网搜索", fetched: output.opportunities.length }],
+      errors: [],
+      searchedAt: output.searchedAt,
+    });
+    statusElement.textContent = `AI补充搜索完成；核验 ${output.opportunities.length} 条来源`;
+  } catch (error) {
+    errorsElement.classList.remove("hidden");
+    errorsElement.textContent = `AI联网搜索失败：${error.message}`;
+    statusElement.textContent = "";
+  } finally {
+    aiButton.disabled = false;
   }
 });
 

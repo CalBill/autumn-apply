@@ -17,6 +17,7 @@ Current endpoints:
 - `POST /v1/ai/test`
 - `POST /v1/ai/resumes/structure`
 - `POST /v1/ai/match`
+- `POST /v1/ai/search` (OpenAI only)
 
 PDF, DOCX, TXT and Markdown files are parsed locally. The service rejects payloads over 22 MB and resume files over 15 MB. Browser requests are accepted only from Chrome extensions and localhost origins.
 
@@ -25,3 +26,5 @@ On macOS, BYOK secrets are stored in Keychain under `dev.autumn-apply.api-key`. 
 OpenAI and DeepSeek use their official Responses-compatible endpoints. Requests set `store: false`; API keys stay inside the local service and are never returned to the extension.
 
 Resume AI structuring is an explicit second step after local text extraction. Semantic job matching strips the candidate's name, email, phone and links before sending education, experience, skills and preferences to the configured provider. Both workflows use strict JSON schemas and label missing evidence as unknown instead of guessing.
+
+AI web discovery uses OpenAI's hosted `web_search` tool only after an explicit click. Returned URLs must appear in the tool's cited sources, resolve to public HTTPS addresses, and pass a separate reachability/content-signal check. Private-network, localhost, credential-bearing and non-HTTPS URLs are rejected. DeepSeek remains available for structuring and matching but is not presented as having hosted web search.

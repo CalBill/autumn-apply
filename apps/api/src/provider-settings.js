@@ -8,8 +8,8 @@ const execFile = promisify(execFileCallback);
 const KEYCHAIN_SERVICE = "dev.autumn-apply.api-key";
 
 export const PROVIDERS = Object.freeze({
-  openai: { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna", envKey: "OPENAI_API_KEY" },
-  deepseek: { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com", model: "deepseek-flash", envKey: "DEEPSEEK_API_KEY" },
+  openai: { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna", envKey: "OPENAI_API_KEY", webSearch: true },
+  deepseek: { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com", model: "deepseek-flash", envKey: "DEEPSEEK_API_KEY", webSearch: false },
 });
 
 function defaultConfigPath() {
@@ -85,7 +85,7 @@ export function createProviderSettingsStore({ configPath = defaultConfigPath(), 
   async function status() {
     const config = await readConfig();
     const secret = await keyStore.read(config.provider);
-    return { ...config, apiKeyConfigured: Boolean(secret.apiKey), apiKeySource: secret.source, persistentKeyStorage: keyStore.persistent };
+    return { ...config, apiKeyConfigured: Boolean(secret.apiKey), apiKeySource: secret.source, persistentKeyStorage: keyStore.persistent, capabilities: { webSearch: PROVIDERS[config.provider].webSearch } };
   }
 
   async function update(value) {
