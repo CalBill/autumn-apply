@@ -2,6 +2,7 @@ import { closeSync, mkdirSync, openSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { openSetup } from "./platform-launch.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeDir = resolve(root, ".autumn-apply-runtime");
@@ -31,19 +32,6 @@ async function waitForHealth() {
   throw new Error(`本机服务没有在 ${healthUrl} 启动；请查看 ${resolve(runtimeDir, "api.log")}`);
 }
 
-function openForSetup() {
-  if (process.platform === "darwin") {
-    spawn("open", [extensionDir], { detached: true, stdio: "ignore" }).unref();
-    spawn("open", ["-a", "Google Chrome", "chrome://extensions"], { detached: true, stdio: "ignore" }).unref();
-  } else if (process.platform === "win32") {
-    spawn("explorer", [extensionDir], { detached: true, stdio: "ignore" }).unref();
-    spawn("cmd", ["/c", "start", "", "chrome://extensions"], { detached: true, stdio: "ignore" }).unref();
-  } else {
-    spawn("xdg-open", [extensionDir], { detached: true, stdio: "ignore" }).unref();
-    spawn("google-chrome", ["chrome://extensions"], { detached: true, stdio: "ignore" }).unref();
-  }
-}
-
 console.log("AutumnApply：正在构建浏览器扩展…");
 run(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"]);
 mkdirSync(runtimeDir, { recursive: true, mode: 0o700 });
@@ -56,6 +44,7 @@ if (!status?.ok) {
     cwd: root,
     detached: true,
     stdio: ["ignore", log, log],
+    windowsHide: true,
   });
   child.unref();
   closeSync(log);
@@ -63,9 +52,11 @@ if (!status?.ok) {
   status = await waitForHealth();
 }
 
-if (process.env.AUTUMN_APPLY_NO_OPEN !== "1") openForSetup();
+const setup = process.env.AUTUMN_APPLY_NO_OPEN !== "1" ? openSetup({ extensionDir }) : null;
 console.log(`\n本机服务在线：v${status.version}`);
 console.log(`扩展目录：${extensionDir}`);
 if (process.env.AUTUMN_APPLY_NO_OPEN !== "1") {
-  console.log("Chrome 已打开扩展管理页。首次使用请选择“加载已解压的扩展程序”，然后选择上面的扩展目录。");
+  console.log(setup.browserOpened
+    ? "Chrome 已打开扩展管理页。首次使用请选择“加载已解压的扩展程序”，然后选择上面的扩展目录。"
+    : "未自动找到 Chrome。请手动打开 chrome://extensions，选择“加载已解压的扩展程序”，然后选择上面的扩展目录。");
 }

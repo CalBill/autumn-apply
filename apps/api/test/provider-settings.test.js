@@ -41,5 +41,5 @@ test("settings persist only non-secret fields with restrictive permissions", asy
   const status = await store.update({ provider: "deepseek", model: "deepseek-flash", apiKey: "secret-value" });
   assert.equal(status.apiKeyConfigured, true);
   assert.equal(JSON.parse(await readFile(configPath, "utf8")).apiKey, undefined);
-  assert.equal((await stat(configPath)).mode & 0o777, 0o600);
+  if (process.platform !== "win32") assert.equal((await stat(configPath)).mode & 0o777, 0o600);
 });

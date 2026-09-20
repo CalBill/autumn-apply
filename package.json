@@ -16,7 +16,7 @@
     "check": "node scripts/check-scaffold.mjs && node scripts/check-extension.mjs",
     "start:api": "node apps/api/src/server.js",
     "preview:fixture": "node scripts/serve-fixture.mjs",
-    "test": "node --test apps/api/test/*.test.js apps/extension/shared/*.test.js apps/extension/shared/providers/*.test.js",
+    "test": "node --test",
     "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit"
   },
   "devDependencies": {
