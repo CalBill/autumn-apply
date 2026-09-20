@@ -45,7 +45,11 @@ function renderResults(output) {
     list(card.querySelector(".strengths"), entry.assessment.strengths.slice(0, 3), "暂未发现明确优势");
     list(card.querySelector(".gaps"), [...entry.assessment.gaps, ...entry.assessment.warnings].slice(0, 3), "没有明显提醒");
     const sourceKind = card.querySelector(".source-kind");
-    sourceKind.textContent = entry.job.sourceType === "wechat-article" ? "公众号招聘信息" : "企业官网岗位";
+    sourceKind.textContent = entry.job.sourceType === "wechat-article"
+      ? "公众号招聘信息"
+      : entry.job.sourceType === "ai-web-search"
+        ? (entry.job.sourceVerified ? "AI联网 · 已核验" : "AI联网 · 待核验")
+        : "企业官网岗位";
     sourceKind.classList.toggle("unverified", !entry.job.sourceVerified);
     const link = card.querySelector(".job-link");
     link.href = entry.job.sourceUrl;
@@ -154,7 +158,11 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
         },
         assessment: {
           score: item.matchScore, strengths: [item.matchReason], gaps: item.hardRequirementRisk ? [item.hardRequirementRisk] : [],
-          warnings: item.verification.status === "verified" ? [] : ["来源页面可达，但正文信号尚未完全核验"],
+          warnings: item.verification.status === "verified"
+            ? []
+            : [item.verification.status === "reachable"
+              ? "来源页面可达，但正文信号尚未完全核验"
+              : "来源页面当前无法访问，投递前必须人工核对"],
         },
       })),
       sourceStats: [{ name: "AI联网搜索", fetched: output.opportunities.length }],
