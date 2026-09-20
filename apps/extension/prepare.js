@@ -1,6 +1,6 @@
 import { STATUS_LABELS, setSubmissionMode, upsertApplication } from "./shared/applications.js";
 import { createPreparationQuestions, mergePreparationQuestions, preparationReadiness, questionsFromAiPackage } from "./shared/application-workflow.js";
-import { createApplicationPackageWithAi } from "./shared/local-api.js";
+import { createApplicationPackageWithAi, exportResumeDocx } from "./shared/local-api.js";
 import { createAiResumeVariant, createResumeVariant } from "./shared/resume.js";
 import { loadApplications, loadProfile, saveApplications } from "./shared/storage.js";
 
@@ -175,6 +175,29 @@ document.querySelector("#download-resume").addEventListener("click", async () =>
     saveAs: true,
   });
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+});
+document.querySelector("#download-docx").addEventListener("click", async (event) => {
+  if (!resumeEditor.value.trim()) return showStatus("请先生成岗位版简历。", "error");
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const output = await exportResumeDocx(resumeEditor.value, `${application.job.company}-${application.job.title}`);
+    const binary = atob(output.dataBase64);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: output.mimeType }));
+    await chrome.downloads.download({ url, filename: output.filename, saveAs: true });
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    showStatus("Word 岗位版简历已生成；请打开检查分页和字体。", "success");
+  } catch (error) {
+    showStatus(`Word 导出失败：${error.message}`, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+document.querySelector("#print-pdf").addEventListener("click", async () => {
+  if (!resumeEditor.value.trim()) return showStatus("请先生成岗位版简历。", "error");
+  await persist({ announce: false });
+  await chrome.tabs.create({ url: chrome.runtime.getURL(`print-resume.html?id=${encodeURIComponent(application.id)}`) });
 });
 document.querySelectorAll("input[name='submissionMode']").forEach((input) => input.addEventListener("change", async () => {
   if (input.value === "authorized_once" && !confirm("只授权当前岗位执行一次最终提交。系统遇到验证码、法律声明、缺失必填项或无法确认的页面时仍会停止。是否继续？")) {

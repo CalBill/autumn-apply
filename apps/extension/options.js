@@ -256,8 +256,13 @@ async function refreshProviderSettings() {
   const settings = await getProviderSettings();
   providerForm.elements.provider.value = settings.provider;
   providerForm.elements.model.value = settings.model;
+  const keySource = {
+    environment: "环境变量",
+    keychain: "macOS 钥匙串",
+    "windows-dpapi": "Windows 当前用户加密存储",
+  }[settings.apiKeySource] ?? "安全存储";
   showIntegrationStatus(providerStatus, settings.apiKeyConfigured
-    ? `已配置密钥（${settings.apiKeySource === "environment" ? "环境变量" : "系统钥匙串"}）`
+    ? `已配置密钥（${keySource}）`
     : "尚未配置API Key", settings.apiKeyConfigured ? "success" : "");
 }
 

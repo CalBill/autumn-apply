@@ -1,14 +1,20 @@
 {
   "manifest_version": 3,
   "name": "AutumnApply",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "本地优先的中国校招求职助手。",
   "permissions": [
     "activeTab",
+    "alarms",
     "downloads",
+    "notifications",
     "scripting",
     "storage"
   ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "host_permissions": [
     "https://careers.tencent.com/*",
     "https://zhaopin.meituan.com/*",

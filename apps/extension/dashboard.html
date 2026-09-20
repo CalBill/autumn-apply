@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutumnApply · 求职工作台</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <header>
+      <div><p class="eyebrow">AUTUMNAPPLY · WORKSPACE</p><h1>求职工作台</h1><p>从资料准备到岗位投递，一个页面掌握当前进度。</p></div>
+      <nav><a href="options.html">个人资料</a><a href="discover.html">找岗位</a></nav>
+    </header>
+    <main>
+      <section class="panel onboarding">
+        <div class="section-heading"><div><span>00</span><h2>开始使用</h2></div><strong id="overall-progress"></strong></div>
+        <div id="setup-steps" class="setup-steps"></div>
+        <div class="progress"><span id="progress-bar"></span></div>
+      </section>
+
+      <section class="metrics">
+        <article class="panel metric"><span>已发现</span><strong id="metric-discovered">0</strong></article>
+        <article class="panel metric"><span>准备中</span><strong id="metric-preparing">0</strong></article>
+        <article class="panel metric"><span>待提交</span><strong id="metric-ready">0</strong></article>
+        <article class="panel metric"><span>已确认投递</span><strong id="metric-submitted">0</strong></article>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><span>01</span><h2>申请工作区</h2></div><div class="filters"><button data-filter="active" class="selected">进行中</button><button data-filter="all">全部</button><button data-filter="withdrawn">不投</button></div></div>
+        <div id="application-list" class="application-list"></div>
+        <div id="application-empty" class="empty">还没有申请。先去寻找岗位，并选择“要投”。</div>
+      </section>
+
+      <section class="panel recent-search">
+        <div class="section-heading"><div><span>02</span><h2>最近一次搜索</h2></div><a class="primary" href="discover.html">继续找岗位</a></div>
+        <p id="search-summary">还没有岗位搜索记录。</p>
+      </section>
+      <div id="dashboard-status" role="status"></div>
+    </main>
+    <script type="module" src="dashboard.js"></script>
+  </body>
+</html>

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  createApplicationRecord, findApplicationForJob, markApplicationDecision, markApplicationSubmitted,
+  appendAuditEvent, createApplicationRecord, findApplicationForJob, markApplicationDecision, markApplicationSubmitted,
   recordSubmissionAttempt, setSubmissionMode, upsertApplication,
 } from "./applications.js";
 import { createPreparationQuestions, preparationReadiness } from "./application-workflow.js";
@@ -67,4 +67,12 @@ test("preparation questions expose missing evidence before a job is ready", () =
   record.preparation.questions = questions;
   assert.ok(questions.some((item) => item.subject === "政治面貌"));
   assert.equal(preparationReadiness(record).ready, false);
+});
+
+test("application audit log is bounded and timestamped", () => {
+  let record = createApplicationRecord(draft);
+  for (let index = 0; index < 105; index += 1) record = appendAuditEvent(record, "fill", { index });
+  assert.equal(record.auditLog.length, 100);
+  assert.equal(record.auditLog.at(-1).details.index, 104);
+  assert.ok(record.auditLog.at(-1).createdAt);
 });

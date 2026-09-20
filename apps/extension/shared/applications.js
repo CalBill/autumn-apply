@@ -138,3 +138,8 @@ export function findApplicationForJob(records, job) {
     return sameTitle && sameCompany && (!locations[0] || !locations[1] || locations[0] === locations[1]);
   });
 }
+
+export function appendAuditEvent(record, type, details = {}) {
+  const event = { id: newId("event"), type: String(type), details, createdAt: new Date().toISOString() };
+  return { ...record, auditLog: [...(record.auditLog ?? []), event].slice(-100), updatedAt: event.createdAt };
+}

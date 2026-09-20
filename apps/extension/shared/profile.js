@@ -153,3 +153,25 @@ export function validateProfile(profile) {
 export function profileHasUsefulData(profile) {
   return validateProfile(profile).length === 0;
 }
+
+export function profileReadiness(profile) {
+  const checks = [
+    { id: "identity", label: "姓名和联系方式", complete: Boolean(profile.personal?.fullName && (profile.personal?.email || profile.personal?.phone)) },
+    { id: "education", label: "教育经历", complete: Boolean(profile.education?.length) },
+    { id: "stories", label: "实习或项目经历", complete: Boolean(profile.experiences?.length || profile.projects?.length) },
+    { id: "skills", label: "技能", complete: Boolean(profile.skills?.length) },
+    { id: "roles", label: "目标岗位", complete: Boolean(profile.preferences?.roles?.length) },
+    { id: "locations", label: "目标城市", complete: Boolean(profile.preferences?.locations?.length) },
+    { id: "graduation", label: "毕业年份", complete: Boolean(profile.preferences?.graduationYear) },
+    { id: "filters", label: "行业、企业性质或排除条件", complete: Boolean(
+      profile.preferences?.industries?.length || profile.preferences?.companyTypes?.length || profile.preferences?.excludedKeywords?.length,
+    ) },
+  ];
+  const completed = checks.filter((item) => item.complete).length;
+  return {
+    score: Math.round(completed / checks.length * 100),
+    complete: completed === checks.length,
+    checks,
+    missing: checks.filter((item) => !item.complete).map((item) => item.label),
+  };
+}

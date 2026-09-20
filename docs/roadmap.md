@@ -19,6 +19,7 @@
 - [x] Shared adapters for Feishu Jobs, Greenhouse, Lever and Ashby
 - [x] User-maintained official source watchlist
 - [x] WeChat public-article discovery with CAPTCHA stop
+- [x] Bounded multi-angle WeChat query planning, stable repost deduplication and expiring-link fallback
 - [x] Source trust labels for official jobs and unverified article clues
 - [x] User-directed role, location, include and exclude filters
 - [x] Fetch job details, rank matches and save a shortlist
@@ -34,14 +35,14 @@
 ## Milestone 1.5 — Optional BYOK intelligence
 
 - [x] Loopback-only local API service
-- [x] macOS Keychain storage and environment-variable fallback
+- [x] macOS Keychain, Windows DPAPI and environment-variable secret storage
 - [x] OpenAI and DeepSeek Responses-compatible clients
 - [x] Explicit AI resume structuring with strict schemas
 - [x] Privacy-minimized semantic matching and hard-requirement extraction
 - [x] OpenAI hosted web search with citation and public-URL verification
 - [x] Grounded AI application package with source-id validation
 - [ ] OCR for scanned resumes
-- [ ] Linux Secret Service and Windows Credential Manager persistence
+- [ ] Linux Secret Service persistence
 
 ## Milestone 2 — China recruitment adapters
 
@@ -62,9 +63,20 @@
 - [ ] Interview-stage tracking
 - [ ] Export and encrypted backup
 
+## Milestone 3.5 — Usability v0.6
+
+- [x] One-click macOS and Windows launchers for build, local API and extension setup
+- [x] Guided onboarding and unified local dashboard
+- [x] DOCX resume export and PDF-ready print view
+- [x] Saved basic searches with new-job and seven-day deadline alerts
+- [x] Recruitment-platform detection and conservative capability reporting
+- [x] Per-run form-fill report, recoverable snapshot and local audit trail
+- [ ] Signed desktop installer and automatic extension installation
+- [ ] Dedicated multi-step Beisen and Moka application adapters
+
 ## Milestone 4 — Assisted batches
 
 - [x] User-approved apply / skip decisions
 - [ ] Batch preparation with per-job review
-- [ ] Failure recovery and audit log
+- [x] Failure recovery and audit log
 - [ ] Rate limits and platform-policy controls

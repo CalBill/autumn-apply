@@ -105,8 +105,8 @@ export function fillGenericForm(payload) {
     element.style.outlineOffset = "2px";
   };
 
-  const report = { filled: [], skipped: [], review: [] };
-  const controls = [...document.querySelectorAll("input, textarea, select, [contenteditable='true']")];
+  const report = { filled: [], skipped: [], review: [], snapshot: [] };
+  const controls = [...document.querySelectorAll("input, textarea, select, [contenteditable='true'], [role='textbox'], [role='combobox']")];
   for (const element of controls) {
     if (!visible(element) || element.disabled || element.readOnly) continue;
     const type = (element.getAttribute("type") || "text").toLowerCase();
@@ -114,6 +114,16 @@ export function fillGenericForm(payload) {
     if (["hidden", "password", "submit", "button", "reset"].includes(type)) continue;
     if (["file", "checkbox", "radio"].includes(type)) {
       report.review.push({ label: label || type, reason: "需要人工处理" });
+      mark(element, "review");
+      continue;
+    }
+    if (element.getAttribute("role") === "combobox") {
+      report.review.push({ label, reason: "自定义下拉框需要人工选择" });
+      mark(element, "review");
+      continue;
+    }
+    if (element.getAttribute("role") === "textbox" && !(element instanceof HTMLInputElement) && !(element instanceof HTMLTextAreaElement) && !element.isContentEditable) {
+      report.review.push({ label, reason: "自定义文本控件需要人工填写" });
       mark(element, "review");
       continue;
     }
@@ -135,6 +145,9 @@ export function fillGenericForm(payload) {
       continue;
     }
 
+    const token = element.dataset.autumnApplyToken || `aa-${Date.now()}-${report.filled.length}-${Math.random().toString(16).slice(2)}`;
+    element.dataset.autumnApplyToken = token;
+    const previousValue = element.isContentEditable ? element.textContent : element.value;
     let success = true;
     if (element instanceof HTMLSelectElement) success = fillSelect(element, value);
     else if (element.isContentEditable) {
@@ -145,11 +158,46 @@ export function fillGenericForm(payload) {
 
     if (success) {
       report.filled.push({ label, key: definition.key });
+      const filledValue = element.isContentEditable ? element.textContent : element.value;
+      report.snapshot.push({ token, previousValue: String(previousValue ?? ""), filledValue: String(filledValue ?? "") });
       mark(element, "filled");
     } else {
       report.review.push({ label, key: definition.key, reason: "选项中没有匹配值" });
       mark(element, "review");
     }
+  }
+  return report;
+}
+
+export function restoreAutofill(snapshot = []) {
+  const setNativeValue = (element, value) => {
+    const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+    if (setter) setter.call(element, value);
+    else element.value = value;
+    for (const type of ["input", "change", "blur"]) element.dispatchEvent(new Event(type, { bubbles: true }));
+  };
+  const report = { restored: [], skipped: [] };
+  for (const item of snapshot) {
+    const element = document.querySelector(`[data-autumn-apply-token='${CSS.escape(String(item.token))}']`);
+    if (!element) { report.skipped.push({ token: item.token, reason: "字段已不存在" }); continue; }
+    const currentValue = element.isContentEditable ? element.textContent : element.value;
+    if (String(currentValue ?? "") !== String(item.filledValue ?? "")) {
+      report.skipped.push({ token: item.token, reason: "用户已经修改，未撤销" });
+      continue;
+    }
+    if (element.isContentEditable) {
+      element.textContent = item.previousValue;
+      element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContent" }));
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    } else if (element instanceof HTMLSelectElement) {
+      element.value = item.previousValue;
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    } else setNativeValue(element, item.previousValue);
+    element.style.outline = "";
+    element.style.outlineOffset = "";
+    delete element.dataset.autumnApplyStatus;
+    report.restored.push({ token: item.token });
   }
   return report;
 }

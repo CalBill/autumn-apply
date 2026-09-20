@@ -3,9 +3,12 @@ import { access, readFile } from "node:fs/promises";
 const requiredFiles = [
   "LICENSE",
   "README.md",
+  "AutumnApply.command",
+  "AutumnApply.cmd",
   "SECURITY.md",
   "THIRD_PARTY_NOTICES.md",
   "docs/architecture.md",
+  "docs/getting-started.zh-CN.md",
   "docs/roadmap.md",
   "packages/contracts/src/index.ts",
 ];

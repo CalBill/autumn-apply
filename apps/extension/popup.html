@@ -9,7 +9,7 @@
   <body>
     <header>
       <div><span class="mark">A</span><strong>AutumnApply</strong></div>
-      <div><a href="discover.html" target="_blank" class="icon-link">找岗位</a><button id="open-options" class="icon-button" title="打开资料库">设置</button></div>
+      <div><a href="dashboard.html" target="_blank" class="icon-link">工作台</a><a href="discover.html" target="_blank" class="icon-link">找岗位</a><button id="open-options" class="icon-button" title="打开资料库">设置</button></div>
     </header>
 
     <main>
@@ -40,6 +40,12 @@
         <div class="actions">
           <button id="generate-resume" class="primary">生成岗位版简历</button>
           <button id="fill-form" class="secondary">填写当前表单</button>
+        </div>
+        <div id="fill-report" class="fill-report hidden">
+          <strong id="adapter-name"></strong><p id="adapter-notes"></p>
+          <div class="report-counts"><span id="filled-count"></span><span id="review-count"></span><span id="skipped-count"></span></div>
+          <ul id="review-fields"></ul>
+          <button id="undo-fill" class="text-button">撤销本次自动填写</button>
         </div>
         <div class="actions compact">
           <button id="save-application" class="secondary">保存为待提交</button>

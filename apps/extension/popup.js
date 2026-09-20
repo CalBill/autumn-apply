@@ -1,7 +1,8 @@
 import { analyzeJob } from "./shared/matcher.js";
-import { createApplicationRecord, findApplicationForJob, markApplicationSubmitted, recordSubmissionAttempt, upsertApplication } from "./shared/applications.js";
+import { appendAuditEvent, createApplicationRecord, findApplicationForJob, markApplicationSubmitted, recordSubmissionAttempt, upsertApplication } from "./shared/applications.js";
+import { detectFormAdapter } from "./shared/form-adapters.js";
 import { buildAutofillPayload, SENSITIVE_LABELS } from "./shared/form-mapping.js";
-import { extractJobFromPage, fillGenericForm, reviewSubmissionPage } from "./shared/page-actions.js";
+import { extractJobFromPage, fillGenericForm, restoreAutofill, reviewSubmissionPage } from "./shared/page-actions.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createResumeVariant } from "./shared/resume.js";
 import { loadApplications, loadDraft, loadProfile, saveApplications, saveDraft } from "./shared/storage.js";
@@ -14,6 +15,7 @@ const elements = Object.fromEntries([
   "onboarding", "start-panel", "result-panel", "resume-panel", "job-company", "job-title", "job-meta",
   "score", "decision", "strengths", "gaps", "resume-preview", "status",
   "submission-panel", "submission-mode", "submission-copy",
+  "fill-report", "adapter-name", "adapter-notes", "filled-count", "review-count", "skipped-count", "review-fields",
 ].map((id) => [id, document.getElementById(id)]));
 
 function showStatus(message, kind = "") {
@@ -105,6 +107,7 @@ async function downloadResume() {
 
 async function fillCurrentForm() {
   const tab = await activeTab();
+  const adapter = detectFormAdapter(tab.url);
   const payload = { ...buildAutofillPayload(profile), sensitiveLabels: SENSITIVE_LABELS };
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -112,7 +115,43 @@ async function fillCurrentForm() {
     args: [payload],
   });
   const message = `已填写 ${result.filled.length} 项；跳过 ${result.skipped.length} 项；需人工处理 ${result.review.length} 项。`;
+  draft.fillSnapshot = {
+    url: tab.url,
+    entries: result.snapshot,
+    report: {
+      filled: result.filled, review: result.review, skipped: result.skipped,
+      adapter: { id: adapter.id, name: adapter.name, notes: adapter.notes, level: adapter.level },
+    },
+    createdAt: new Date().toISOString(),
+  };
+  await saveDraft(draft);
+  elements["fill-report"].classList.remove("hidden");
+  elements["adapter-name"].textContent = adapter.name;
+  elements["adapter-notes"].textContent = adapter.notes;
+  elements["filled-count"].textContent = `已填写 ${result.filled.length}`;
+  elements["review-count"].textContent = `待处理 ${result.review.length}`;
+  elements["skipped-count"].textContent = `已跳过 ${result.skipped.length}`;
+  fillList(elements["review-fields"], result.review.slice(0, 8).map((item) => `${item.label}：${item.reason}`), "没有待人工处理字段");
+  const application = findApplicationForJob(applications, draft.assessment.job);
+  if (application) {
+    applications = upsertApplication(applications, appendAuditEvent(application, "form_fill", {
+      adapter: adapter.id, filled: result.filled.length, review: result.review.length, skipped: result.skipped.length,
+    }));
+    await saveApplications(applications);
+  }
   showStatus(message, result.review.length ? "" : "success");
+}
+
+async function undoLastFill() {
+  if (!draft?.fillSnapshot?.entries?.length) throw new Error("没有可撤销的自动填写记录");
+  const tab = await activeTab();
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id }, func: restoreAutofill, args: [draft.fillSnapshot.entries],
+  });
+  draft.fillSnapshot = null;
+  await saveDraft(draft);
+  elements["fill-report"].classList.add("hidden");
+  showStatus(`已撤销 ${result.restored.length} 项；${result.skipped.length} 项因页面变化或用户已修改而保留。`, "success");
 }
 
 async function inspectSubmission() {
@@ -168,6 +207,7 @@ document.querySelector("#analyze-job").addEventListener("click", () => analyzeCu
 document.querySelector("#reanalyze").addEventListener("click", () => analyzeCurrentPage().catch((error) => showStatus(`分析失败：${error.message}`, "error")));
 document.querySelector("#generate-resume").addEventListener("click", () => generateResume().catch((error) => showStatus(`生成失败：${error.message}`, "error")));
 document.querySelector("#fill-form").addEventListener("click", () => fillCurrentForm().catch((error) => showStatus(`填写失败：${error.message}`, "error")));
+document.querySelector("#undo-fill").addEventListener("click", () => undoLastFill().catch((error) => showStatus(`撤销失败：${error.message}`, "error")));
 document.querySelector("#review-submission").addEventListener("click", () => inspectSubmission().catch((error) => showStatus(`检查失败：${error.message}`, "error")));
 document.querySelector("#execute-submission").addEventListener("click", () => executeAuthorizedSubmission().catch((error) => showStatus(`提交已停止：${error.message}`, "error")));
 document.querySelector("#save-application").addEventListener("click", () => saveApplication().catch((error) => showStatus(`保存失败：${error.message}`, "error")));
@@ -189,4 +229,14 @@ if (!profileHasUsefulData(profile)) {
   elements["start-panel"].classList.add("hidden");
 } else if (draft?.assessment) {
   renderAssessment();
+}
+if (draft?.fillSnapshot?.entries?.length) {
+  const saved = draft.fillSnapshot.report ?? { filled: draft.fillSnapshot.entries, review: [], skipped: [], adapter: { name: "上次自动填写", notes: "只会撤销仍保持自动填写值的字段。" } };
+  elements["fill-report"].classList.remove("hidden");
+  elements["adapter-name"].textContent = saved.adapter?.name ?? "上次自动填写";
+  elements["adapter-notes"].textContent = saved.adapter?.notes ?? "只会撤销仍保持自动填写值的字段。";
+  elements["filled-count"].textContent = `已填写 ${saved.filled.length}`;
+  elements["review-count"].textContent = `待处理 ${saved.review.length}`;
+  elements["skipped-count"].textContent = `已跳过 ${saved.skipped.length}`;
+  fillList(elements["review-fields"], saved.review.slice(0, 8).map((item) => `${item.label}：${item.reason}`), "没有待人工处理字段");
 }
