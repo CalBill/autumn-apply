@@ -1,4 +1,7 @@
 import { createEmptyProfile, normalizeProfile } from "./profile.js";
+import { normalizeJob } from "./job.js";
+
+const STORAGE_SCHEMA_VERSION = 2;
 
 export const STORAGE_KEYS = {
   profile: "candidateProfile",
@@ -45,22 +48,71 @@ export async function saveDraft(draft) {
 
 export async function loadApplications() {
   const result = await storageArea().get(STORAGE_KEYS.applications);
-  return Array.isArray(result[STORAGE_KEYS.applications]) ? result[STORAGE_KEYS.applications] : [];
+  const stored = result[STORAGE_KEYS.applications];
+  const records = Array.isArray(stored) ? stored : stored?.records;
+  return Array.isArray(records) ? records.map(hydrateApplication) : [];
 }
 
 export async function saveApplications(applications) {
-  await storageArea().set({ [STORAGE_KEYS.applications]: applications });
-  return applications;
+  const records = applications.map(serializeApplication);
+  await storageArea().set({
+    [STORAGE_KEYS.applications]: { schemaVersion: STORAGE_SCHEMA_VERSION, records },
+  });
+  return records.map(hydrateApplication);
 }
 
 export async function loadDiscovery() {
   const result = await storageArea().get(STORAGE_KEYS.discovery);
-  return result[STORAGE_KEYS.discovery] ?? null;
+  return hydrateDiscovery(result[STORAGE_KEYS.discovery]);
 }
 
 export async function saveDiscovery(discovery) {
-  await storageArea().set({ [STORAGE_KEYS.discovery]: discovery });
-  return discovery;
+  const stored = serializeDiscovery(discovery);
+  await storageArea().set({ [STORAGE_KEYS.discovery]: stored });
+  return hydrateDiscovery(stored);
+}
+
+function serializeAssessment(assessment, job) {
+  if (!assessment || typeof assessment !== "object") return assessment ?? null;
+  const { job: _duplicateJob, ...rest } = assessment;
+  return { ...rest, jobId: assessment.jobId ?? job.id };
+}
+
+function hydrateAssessment(assessment, job) {
+  return assessment && typeof assessment === "object" ? { ...assessment, job } : assessment ?? null;
+}
+
+function serializeApplication(record = {}) {
+  const job = normalizeJob(record.job ?? record.assessment?.job);
+  return { ...record, job, assessment: serializeAssessment(record.assessment, job) };
+}
+
+function hydrateApplication(record = {}) {
+  const job = normalizeJob(record.job ?? record.assessment?.job);
+  return { ...record, job, assessment: hydrateAssessment(record.assessment, job) };
+}
+
+function serializeDiscovery(discovery) {
+  if (!discovery || typeof discovery !== "object") return null;
+  return {
+    ...discovery,
+    schemaVersion: STORAGE_SCHEMA_VERSION,
+    results: (discovery.results ?? []).map((entry) => {
+      const job = normalizeJob(entry.job ?? entry.assessment?.job);
+      return { ...entry, job, assessment: serializeAssessment(entry.assessment, job) };
+    }),
+  };
+}
+
+function hydrateDiscovery(discovery) {
+  if (!discovery || typeof discovery !== "object") return null;
+  return {
+    ...discovery,
+    results: (discovery.results ?? []).map((entry) => {
+      const job = normalizeJob(entry.job ?? entry.assessment?.job);
+      return { ...entry, job, assessment: hydrateAssessment(entry.assessment, job) };
+    }),
+  };
 }
 
 export async function loadCompanySources() {
