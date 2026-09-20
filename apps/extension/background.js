@@ -1,7 +1,7 @@
 import { discoverJobs } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders } from "./shared/providers/sources.js";
-import { normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
+import { findUpcomingDeadlines, normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
 import { loadCompanySources, loadProfile, loadSearchMonitor, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
 
 async function runMonitor() {
@@ -16,6 +16,11 @@ async function runMonitor() {
       providers: createDiscoveryProviders(fetch, await loadCompanySources()),
     });
     const updated = updateMonitorAfterSearch(monitor, output.results, { searchedAt: output.searchedAt });
+    const deadlines = findUpcomingDeadlines(output.results, monitor);
+    updated.deadlineNotifiedJobIds = [...new Set([
+      ...monitor.deadlineNotifiedJobIds,
+      ...deadlines.map((job) => String(job.id)),
+    ])].slice(-2_000);
     await saveDiscovery(output);
     await saveSearchMonitor({ ...updated, newJobs: undefined });
     if (updated.newJobs.length) {
@@ -25,6 +30,15 @@ async function runMonitor() {
         title: `发现 ${updated.newJobs.length} 个新岗位`,
         message: updated.newJobs.slice(0, 3).map((job) => `${job.company} · ${job.title}`).join("；"),
         priority: 1,
+      });
+    }
+    if (deadlines.length) {
+      await chrome.notifications.create("autumn-apply-deadlines", {
+        type: "basic",
+        iconUrl: chrome.runtime.getURL("icon.svg"),
+        title: `${deadlines.length} 个岗位即将在七天内截止`,
+        message: deadlines.slice(0, 3).map((job) => `${job.company} · ${job.title} · ${job.deadline}`).join("；"),
+        priority: 2,
       });
     }
   } catch (error) {
@@ -39,5 +53,5 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === SEARCH_ALARM_NAME) runMonitor();
 });
 chrome.notifications.onClicked.addListener((notificationId) => {
-  if (notificationId === "autumn-apply-new-jobs") chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
+  if (["autumn-apply-new-jobs", "autumn-apply-deadlines"].includes(notificationId)) chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
 });

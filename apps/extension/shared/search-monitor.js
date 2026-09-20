@@ -7,9 +7,20 @@ export function normalizeSearchMonitor(input = {}) {
     intervalHours,
     instructions: input.instructions && typeof input.instructions === "object" ? input.instructions : null,
     seenJobIds: Array.isArray(input.seenJobIds) ? [...new Set(input.seenJobIds.map(String))].slice(-2_000) : [],
+    deadlineNotifiedJobIds: Array.isArray(input.deadlineNotifiedJobIds) ? [...new Set(input.deadlineNotifiedJobIds.map(String))].slice(-2_000) : [],
     lastRunAt: input.lastRunAt ? String(input.lastRunAt) : null,
     lastError: input.lastError ? String(input.lastError).slice(0, 500) : "",
   };
+}
+
+export function findUpcomingDeadlines(results, monitor, { now = Date.now(), days = 7 } = {}) {
+  const notified = new Set(normalizeSearchMonitor(monitor).deadlineNotifiedJobIds);
+  const maximum = now + days * 86_400_000;
+  return (results ?? []).map((entry) => entry.job ?? entry).filter((job) => {
+    if (!job?.id || !job.deadline || notified.has(String(job.id))) return false;
+    const value = Date.parse(String(job.deadline).replace(/\./g, "-").replace(/\//g, "-"));
+    return Number.isFinite(value) && value >= now && value <= maximum;
+  });
 }
 
 export function updateMonitorAfterSearch(monitor, results, { error = "", searchedAt = new Date().toISOString() } = {}) {
