@@ -40,6 +40,8 @@ An official career-system record and a WeChat article have different trust level
 
 An external model provider is optional. When one is used, the calling module must disclose exactly which fields leave the machine. Identity numbers, authentication state and unrelated profile facts must not be sent by default.
 
+The optional local API binds only to `127.0.0.1`. On macOS it stores provider keys in Keychain and returns status metadata, never the secret. Resume file extraction stays local; AI resume structuring is a separate explicit action. Semantic matching removes direct identity/contact fields. Hosted web discovery accepts only cited public HTTPS URLs and revalidates redirects, DNS targets, reachability and page signals before presenting results.
+
 ## Core domains
 
 ### Candidate profile

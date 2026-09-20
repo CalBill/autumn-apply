@@ -16,14 +16,16 @@ The extension stores profile data with `chrome.storage.local`. It does not reque
 ## Current workflow
 
 1. Open the extension options page and save a candidate profile.
-2. Open **找岗位**, refine role/location/required/excluded instructions, and search Tencent's public careers API.
-3. Review ranked results and add relevant jobs to the local shortlist.
-4. Alternatively, visit a job page and choose **提取并分析**.
-5. Review hard requirements, strengths, gaps and extraction quality.
-6. Generate a grounded Markdown resume draft.
-7. On an application form, choose **填写当前表单**.
-8. Review green and orange outlines, submit manually, then optionally mark the record as submitted.
+2. Start the local service with `npm run start:api`; optionally import a PDF/DOCX resume or configure BYOK AI.
+3. Open **找岗位**, refine role/location/required/excluded instructions, and search supported official career systems and public WeChat clues.
+4. Optionally run privacy-minimized AI matching or OpenAI hosted web discovery with source verification.
+5. Review ranked results and add relevant jobs to the local shortlist.
+6. Alternatively, visit a job page and choose **提取并分析**.
+7. Review hard requirements, strengths, gaps and extraction quality.
+8. Generate a grounded Markdown resume draft.
+9. On an application form, choose **填写当前表单**.
+10. Review green and orange outlines, submit manually, then optionally mark the record as submitted.
 
 The generic form engine intentionally skips passwords, verification codes, identity documents, financial information, salary history, file inputs, checkboxes and radio buttons.
 
-Job discovery currently has one source: the public Tencent Careers API. The exact host permission is declared in `manifest.json`; no account or candidate profile is sent to Tencent.
+Base discovery uses explicit host permissions for supported official career systems and Sogou Weixin. It sends no account or full candidate profile to those sources. Optional AI calls go through the loopback-only local service; the UI discloses what leaves the machine and never receives the API key.

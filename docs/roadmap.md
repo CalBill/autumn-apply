@@ -23,13 +23,24 @@
 - [x] User-directed role, location, include and exclude filters
 - [x] Fetch job details, rank matches and save a shortlist
 - [ ] Expand the curated official-source catalog
-- [ ] Import a text-based PDF or DOCX resume
+- [x] Import a text-based PDF or DOCX resume
 - [x] Extract a job description from the active browser tab
 - [x] Explain hard-condition and relevance matching
 - [x] Generate a fact-grounded resume draft
 - [x] Fill standard form controls
 - [x] Highlight uncertain or unfilled fields
 - [x] Stop before final submission
+
+## Milestone 1.5 — Optional BYOK intelligence
+
+- [x] Loopback-only local API service
+- [x] macOS Keychain storage and environment-variable fallback
+- [x] OpenAI and DeepSeek Responses-compatible clients
+- [x] Explicit AI resume structuring with strict schemas
+- [x] Privacy-minimized semantic matching and hard-requirement extraction
+- [x] OpenAI hosted web search with citation and public-URL verification
+- [ ] OCR for scanned resumes
+- [ ] Linux Secret Service and Windows Credential Manager persistence
 
 ## Milestone 2 — China recruitment adapters
 
