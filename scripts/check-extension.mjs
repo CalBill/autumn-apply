@@ -38,7 +38,7 @@ for (const path of [
   "shared/form-adapters.js",
   "shared/application-workflow.js",
   "shared/local-api.js",
-  "shared/discovery.js", "shared/providers/tencent.js", "shared/providers/company-careers.js", "shared/providers/wechat.js", "shared/providers/sources.js",
+  "shared/discovery.js", "shared/discovery-output.js", "shared/providers/tencent.js", "shared/providers/company-careers.js", "shared/providers/wechat.js", "shared/providers/sources.js",
 ]) {
   await access(new URL(path, root));
 }

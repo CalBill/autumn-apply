@@ -1,6 +1,7 @@
 import { createApplicationRecord, markApplicationDecision, upsertApplication } from "./shared/applications.js";
 import { createPreparationQuestions, mergePreparationQuestions } from "./shared/application-workflow.js";
 import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery.js";
+import { createAiDiscoveryOutput, mergeDiscoveryOutputs } from "./shared/discovery-output.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
 import { normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
@@ -159,6 +160,13 @@ async function saveMonitor(instructions, results) {
   }
 }
 
+async function persistDiscovery(output) {
+  discovery = await saveDiscovery(output);
+  await saveMonitor(discovery.instructions, discovery.results);
+  renderResults(discovery);
+  return discovery;
+}
+
 function fillInstructions(instructions) {
   form.elements.queries.value = instructions.queries.join("、");
   form.elements.locations.value = instructions.locations.join("、");
@@ -186,9 +194,7 @@ form.addEventListener("submit", async (event) => {
       providers: createDiscoveryProviders(fetch, companySources),
       onProgress: (message) => { statusElement.textContent = message; },
     });
-    discovery = await saveDiscovery(output);
-    await saveMonitor(output.instructions, output.results);
-    renderResults(discovery);
+    await persistDiscovery(output);
     statusElement.textContent = `完成于 ${new Date(output.searchedAt).toLocaleTimeString()}`;
   } catch (error) {
     emptyElement.classList.remove("hidden");
@@ -212,28 +218,8 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
       excludedKeywords: instructions.excludedKeywords,
       maximumResults: Math.min(20, instructions.maxResults),
     });
-    renderResults({
-      results: output.opportunities.map((item) => {
-        const job = {
-          id: item.id, providerId: item.sourceUrl, title: item.title, company: item.company, location: item.location,
-          description: item.description, sourceUrl: item.sourceUrl, sourcePlatform: `AI联网检索 · ${item.verification.status}`,
-          sourceType: "ai-web-search", sourceVerified: item.verification.status === "verified", publishedAt: item.publishedAt,
-        };
-        return { job, assessment: {
-          job,
-          score: item.matchScore, strengths: [item.matchReason], gaps: item.hardRequirementRisk ? [item.hardRequirementRisk] : [],
-          matchedSkills: [], missingSkills: [], hardRequirementsMet: true, passedThreshold: true,
-          warnings: item.verification.status === "verified"
-            ? []
-            : [item.verification.status === "reachable"
-              ? "来源页面可达，但正文信号尚未完全核验"
-              : "来源页面当前无法访问，投递前必须人工核对"],
-        } };
-      }),
-      sourceStats: [{ name: "AI联网搜索", fetched: output.opportunities.length }],
-      errors: [],
-      searchedAt: output.searchedAt,
-    });
+    const aiDiscovery = createAiDiscoveryOutput(output, instructions);
+    await persistDiscovery(mergeDiscoveryOutputs(discovery, aiDiscovery));
     statusElement.textContent = `AI补充搜索完成；核验 ${output.opportunities.length} 条来源`;
   } catch (error) {
     errorsElement.classList.remove("hidden");

@@ -8,7 +8,8 @@ await mkdir(destination, { recursive: true });
 await cp(source, destination, {
   recursive: true,
   filter(path) {
-    return !path.endsWith("package.json") && !path.endsWith("README.md") && !path.endsWith(".test.js");
+    return !path.includes("/test-fixtures") && !path.includes("\\test-fixtures")
+      && !path.endsWith("package.json") && !path.endsWith("README.md") && !path.endsWith(".test.js");
   },
 });
 
