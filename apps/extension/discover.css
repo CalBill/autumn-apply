@@ -52,6 +52,9 @@ button, .secondary { border: 0; border-radius: 9px; padding: 0.7rem 0.9rem; curs
 ul { margin: 0.35rem 0 0; padding-left: 1rem; color: #566158; font-size: 0.72rem; line-height: 1.45; }
 .job-actions { display: flex; gap: 0.55rem; }
 .job-actions > * { flex: 1; }
+.decision-actions { display: flex; gap: 0.55rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.decision-actions > * { flex: 1; }
+.skip-job { color: #7d3d32; background: #f7e7e1; }
 .shortlist.saved { color: var(--dark); background: #dce9df; }
 .ai-result { padding: 0.75rem; border: 1px solid #b8cdbc; border-radius: 10px; background: #eef6f0; }
 .ai-result strong { font-size: 0.8rem; }

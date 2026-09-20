@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutumnApply · 申请准备</title>
+    <link rel="stylesheet" href="prepare.css" />
+  </head>
+  <body>
+    <header>
+      <div><p class="eyebrow">AUTUMNAPPLY · APPLICATION</p><h1 id="job-title">申请准备</h1><p id="job-meta"></p></div>
+      <nav><a href="discover.html">返回岗位列表</a><a href="options.html">个人资料库</a></nav>
+    </header>
+    <main>
+      <section class="panel overview">
+        <div><span id="status-pill" class="pill"></span><strong id="score"></strong><p id="decision-summary"></p></div>
+        <a id="source-link" class="secondary" target="_blank" rel="noreferrer">查看原始岗位</a>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><span>01</span><h2>补齐缺失信息</h2></div><p id="question-summary"></p></div>
+        <p class="explain">只填写真实经历。勾选“确认属实”后，回答才会发送给你主动调用的 AI，并只用于当前岗位材料。</p>
+        <div id="question-list" class="question-list"></div>
+        <div id="question-empty" class="empty">暂未发现需要补充的信息。</div>
+        <button id="save-questions" class="secondary" type="button">保存补充信息</button>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><span>02</span><h2>岗位版简历</h2></div><p>独立版本，不覆盖原始简历</p></div>
+        <div class="button-row">
+          <button id="generate-local" class="secondary" type="button">不用AI · 基础适配</button>
+          <button id="generate-ai" class="primary" type="button">使用AI · 优化叙述</button>
+          <button id="download-resume" class="secondary" type="button">下载 Markdown</button>
+        </div>
+        <p class="explain">基础模式只调整经历顺序。AI 模式会改写表达，但所有 AI 文本都必须由你核对，不会自动写回个人事实库。</p>
+        <textarea id="resume-editor" rows="24" placeholder="生成后可在这里继续修改。"></textarea>
+        <div id="ai-summary" class="ai-summary hidden"></div>
+        <div id="open-answers" class="open-answers hidden"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><span>03</span><h2>填写与提交权限</h2></div><p id="readiness"></p></div>
+        <div class="mode-grid">
+          <label><input type="radio" name="submissionMode" value="review" checked /><span><strong>审核提交</strong><small>系统填写后停在最后一步，由你亲自提交。</small></span></label>
+          <label><input type="radio" name="submissionMode" value="authorized_once" /><span><strong>授权本次自动提交</strong><small>仅当前岗位、仅一次；出现验证码、声明或缺失项会自动暂停。</small></span></label>
+        </div>
+        <div class="button-row final-actions">
+          <button id="save-application" class="secondary" type="button">保存申请准备</button>
+          <button id="open-and-fill" class="primary" type="button">打开岗位并继续填写</button>
+        </div>
+        <p class="explain">打开岗位后，请点击浏览器工具栏里的 AutumnApply 完成表单填写与最终检查。</p>
+      </section>
+      <div id="page-status" role="status"></div>
+    </main>
+
+    <template id="question-template">
+      <article class="question-card" data-question>
+        <div><span class="question-subject"></span><strong class="question-prompt"></strong><p class="question-reason"></p></div>
+        <textarea rows="4" placeholder="填写真实情况；如果确实没有，也请明确说明。"></textarea>
+        <label class="confirm"><input type="checkbox" />我确认以上回答真实，可用于当前申请</label>
+      </article>
+    </template>
+    <script type="module" src="prepare.js"></script>
+  </body>
+</html>

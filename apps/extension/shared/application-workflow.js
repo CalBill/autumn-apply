@@ -47,6 +47,18 @@ export function mergePreparationQuestions(existing = [], generated = []) {
   return generated.map((item) => previous.has(item.id) ? { ...item, ...previous.get(item.id) } : item);
 }
 
+export function questionsFromAiPackage(jobId, aiPackage) {
+  return (aiPackage?.missingQuestions ?? []).slice(0, 12).map((item) => ({
+    id: questionId(jobId, "ai", `${item.subject}|${item.question}`),
+    category: "ai",
+    subject: String(item.subject ?? "补充信息"),
+    prompt: String(item.question ?? ""),
+    reason: String(item.reason ?? "AI分析认为这项信息会影响申请材料。"),
+    answer: "",
+    confirmed: false,
+  })).filter((item) => item.prompt);
+}
+
 export function preparationReadiness(application) {
   const questions = application.preparation?.questions ?? [];
   const unanswered = questions.filter((item) => !item.confirmed || !String(item.answer ?? "").trim());

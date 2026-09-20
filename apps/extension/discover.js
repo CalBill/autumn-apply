@@ -1,4 +1,5 @@
-import { createApplicationRecord, upsertApplication } from "./shared/applications.js";
+import { createApplicationRecord, markApplicationDecision, upsertApplication } from "./shared/applications.js";
+import { createPreparationQuestions, mergePreparationQuestions } from "./shared/application-workflow.js";
 import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
@@ -54,18 +55,35 @@ function renderResults(output) {
     const link = card.querySelector(".job-link");
     link.href = entry.job.sourceUrl;
     link.textContent = entry.job.sourceType === "wechat-article" ? "查看原始文章" : "查看官方岗位";
-    const shortlist = card.querySelector(".shortlist");
-    const existing = applications.some((item) => item.jobId === entry.job.id);
-    if (existing) {
-      shortlist.textContent = "已加入候选";
-      shortlist.classList.add("saved");
-    }
-    shortlist.addEventListener("click", async () => {
-      const record = createApplicationRecord({ assessment: entry.assessment }, "shortlisted");
+    const applyButton = card.querySelector(".apply-job");
+    const skipButton = card.querySelector(".skip-job");
+    const existing = applications.find((item) => item.jobId === entry.job.id);
+    if (existing?.decision === "apply") applyButton.textContent = "继续准备申请";
+    if (existing?.decision === "skip") skipButton.textContent = "已选择不投";
+    applyButton.addEventListener("click", async () => {
+      const current = applications.find((item) => item.jobId === entry.job.id);
+      let record = current ?? createApplicationRecord({ assessment: entry.assessment }, "shortlisted");
+      record = markApplicationDecision({ ...record, job: entry.job, assessment: entry.assessment, score: entry.assessment.score }, "apply");
+      const generated = createPreparationQuestions(profile, entry.assessment);
+      record.preparation = {
+        questions: mergePreparationQuestions(record.preparation?.questions, generated),
+        resumeVariant: record.preparation?.resumeVariant ?? null,
+        notes: record.preparation?.notes ?? "",
+      };
       applications = upsertApplication(applications, record);
       await saveApplications(applications);
-      shortlist.textContent = "已加入候选";
-      shortlist.classList.add("saved");
+      applyButton.textContent = "继续准备申请";
+      await chrome.tabs.create({ url: chrome.runtime.getURL(`prepare.html?id=${encodeURIComponent(record.id)}`) });
+    });
+    skipButton.addEventListener("click", async () => {
+      const current = applications.find((item) => item.jobId === entry.job.id);
+      let record = current ?? createApplicationRecord({ assessment: entry.assessment }, "shortlisted");
+      const reason = prompt("可选：为什么不投这个岗位？这会帮助你以后回顾。", record.decisionReason ?? "");
+      if (reason === null) return;
+      record = markApplicationDecision({ ...record, job: entry.job, assessment: entry.assessment, score: entry.assessment.score }, "skip", reason);
+      applications = upsertApplication(applications, record);
+      await saveApplications(applications);
+      skipButton.textContent = "已选择不投";
     });
     const aiButton = card.querySelector(".ai-match");
     const aiResult = card.querySelector(".ai-result");
@@ -150,21 +168,23 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
       maximumResults: Math.min(20, instructions.maxResults),
     });
     renderResults({
-      results: output.opportunities.map((item) => ({
-        job: {
+      results: output.opportunities.map((item) => {
+        const job = {
           id: item.id, providerId: item.sourceUrl, title: item.title, company: item.company, location: item.location,
           description: item.description, sourceUrl: item.sourceUrl, sourcePlatform: `AI联网检索 · ${item.verification.status}`,
           sourceType: "ai-web-search", sourceVerified: item.verification.status === "verified", publishedAt: item.publishedAt,
-        },
-        assessment: {
+        };
+        return { job, assessment: {
+          job,
           score: item.matchScore, strengths: [item.matchReason], gaps: item.hardRequirementRisk ? [item.hardRequirementRisk] : [],
+          matchedSkills: [], missingSkills: [], hardRequirementsMet: true, passedThreshold: true,
           warnings: item.verification.status === "verified"
             ? []
             : [item.verification.status === "reachable"
               ? "来源页面可达，但正文信号尚未完全核验"
               : "来源页面当前无法访问，投递前必须人工核对"],
-        },
-      })),
+        } };
+      }),
       sourceStats: [{ name: "AI联网搜索", fetched: output.opportunities.length }],
       errors: [],
       searchedAt: output.searchedAt,

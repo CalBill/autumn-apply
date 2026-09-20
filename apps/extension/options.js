@@ -169,6 +169,13 @@ function renderApplications(applications) {
       link.textContent = application.job.sourcePlatform || "打开";
       sourceCell.append(link);
     } else sourceCell.textContent = "—";
+    if (application.decision === "apply") {
+      const prepareLink = document.createElement("a");
+      prepareLink.href = `prepare.html?id=${encodeURIComponent(application.id)}`;
+      prepareLink.textContent = "准备申请";
+      prepareLink.style.marginLeft = "0.7rem";
+      sourceCell.append(prepareLink);
+    }
     row.append(jobCell, scoreCell, statusCell, updatedCell, sourceCell);
     rows.append(row);
   }

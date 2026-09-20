@@ -1,0 +1,50 @@
+:root { color-scheme: light; --ink:#17221b; --muted:#657069; --paper:#f4f1e8; --panel:#fffdf8; --line:#d9d4c7; --green:#1f6a45; --dark:#12472e; --orange:#d66a2c; --danger:#9b392f; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--paper); }
+button,input,textarea { font:inherit; }
+header { display:flex; justify-content:space-between; gap:2rem; padding:3rem max(2rem,calc((100vw - 1000px)/2)); color:#fff; background:var(--dark); }
+header h1 { margin:.25rem 0 .45rem; font-size:clamp(2rem,4vw,3rem); }
+header p { margin:0; color:#d9e6dd; }
+nav { display:flex; gap:1rem; align-items:flex-start; }
+nav a { color:#fff; }
+.eyebrow { color:#f1a273!important; font-size:.72rem; font-weight:850; letter-spacing:.14em; }
+main { width:min(1000px,calc(100% - 2rem)); margin:-1.5rem auto 5rem; }
+.panel { margin-bottom:1rem; padding:1.35rem; border:1px solid var(--line); border-radius:17px; background:var(--panel); box-shadow:0 12px 30px rgba(35,46,38,.06); }
+.overview { display:flex; justify-content:space-between; gap:1rem; align-items:center; }
+.overview p { margin:.35rem 0 0; color:var(--muted); }
+.pill { display:inline-block; margin-right:.7rem; padding:.25rem .55rem; border-radius:999px; color:var(--dark); background:#e2eee6; font-size:.72rem; font-weight:800; }
+.section-heading { display:flex; justify-content:space-between; gap:1rem; align-items:baseline; margin-bottom:1rem; }
+.section-heading>div { display:flex; gap:.7rem; align-items:baseline; }
+.section-heading span { color:var(--orange); font-weight:800; }
+.section-heading h2,.section-heading p { margin:0; }
+.section-heading p,.explain { color:var(--muted); }
+.explain { font-size:.8rem; line-height:1.55; }
+.question-list { display:grid; gap:.8rem; margin-bottom:1rem; }
+.question-card { display:grid; gap:.7rem; padding:1rem; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.question-card strong { display:block; margin:.3rem 0; }
+.question-card p { margin:0; color:var(--muted); font-size:.78rem; }
+.question-subject { color:var(--orange); font-size:.7rem; font-weight:800; }
+textarea { width:100%; padding:.8rem; border:1px solid #c9c5b8; border-radius:10px; resize:vertical; line-height:1.5; background:#fff; }
+textarea:focus { border-color:var(--green); outline:0; box-shadow:0 0 0 3px rgba(31,106,69,.12); }
+.confirm { display:flex; gap:.5rem; align-items:center; color:var(--muted); font-size:.78rem; }
+.confirm input { width:auto; }
+.button-row { display:flex; flex-wrap:wrap; gap:.7rem; margin-bottom:1rem; }
+button,.secondary { border:0; border-radius:9px; padding:.7rem .95rem; cursor:pointer; text-decoration:none; font-weight:750; }
+.primary { color:#fff; background:var(--green); }
+.secondary { color:var(--dark); background:#e4ede7; }
+button:disabled { opacity:.55; cursor:wait; }
+#resume-editor { min-height:440px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.8rem; }
+.ai-summary,.open-answers { margin-top:1rem; padding:1rem; border-radius:10px; background:#edf5ef; font-size:.82rem; line-height:1.55; }
+.open-answer { margin-top:.7rem; padding-top:.7rem; border-top:1px solid #c8d9cc; }
+.open-answer p { white-space:pre-wrap; }
+.mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+.mode-grid>label { display:flex; gap:.7rem; padding:1rem; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; }
+.mode-grid input { width:auto; }
+.mode-grid small { display:block; margin-top:.3rem; color:var(--muted); line-height:1.45; }
+.final-actions { margin-top:1rem; }
+.empty { margin-bottom:1rem; padding:1rem; border:1px dashed #bdb8aa; border-radius:10px; color:var(--muted); text-align:center; }
+.hidden { display:none!important; }
+#page-status { min-height:1.5rem; color:var(--muted); }
+#page-status.success { color:var(--green); }
+#page-status.error { color:var(--danger); }
+@media(max-width:700px){header{flex-direction:column}.overview,.section-heading{align-items:flex-start}.mode-grid{grid-template-columns:1fr}}
