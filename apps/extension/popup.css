@@ -54,6 +54,10 @@ ul { margin: 0; padding-left: 1.1rem; color: #4e5a52; font-size: 0.75rem; line-h
 .text-button { color: var(--muted); background: transparent; }
 .submission-panel { margin-top:.85rem; padding:.8rem; border:1px solid var(--line); border-radius:10px; background:#faf8f1; }
 .submission-panel p { margin:.3rem 0 0; font-size:.72rem; }
+.fill-report { margin-top:.8rem; padding:.75rem; border:1px solid var(--line); border-radius:10px; background:#f8f6ef; }
+.fill-report p { margin:.25rem 0; font-size:.7rem; }
+.report-counts { display:flex; gap:.4rem; flex-wrap:wrap; margin:.5rem 0; }
+.report-counts span { padding:.22rem .45rem; border-radius:999px; color:var(--green-dark); background:#e4ede7; font-size:.68rem; font-weight:750; }
 .section-title { display: flex; justify-content: space-between; gap: 0.5rem; }
 .safe-chip { align-self: flex-start; padding: 0.3rem 0.5rem; border-radius: 999px; color: var(--green-dark); background: #e4ede7; font-size: 0.68rem; white-space: nowrap; }
 #resume-preview { width: 100%; height: 220px; padding: 0.7rem; border: 1px solid var(--line); border-radius: 9px; background: #faf9f4; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; line-height: 1.5; }

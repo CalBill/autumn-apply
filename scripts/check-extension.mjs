@@ -35,6 +35,7 @@ for (const path of [
   "background.js", "icon.svg", "shared/search-monitor.js",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
+  "shared/form-adapters.js",
   "shared/application-workflow.js",
   "shared/local-api.js",
   "shared/discovery.js", "shared/providers/tencent.js", "shared/providers/company-careers.js", "shared/providers/wechat.js", "shared/providers/sources.js",
