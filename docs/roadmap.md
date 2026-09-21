@@ -36,10 +36,10 @@
 
 - [x] Loopback-only local API service
 - [x] macOS Keychain, Windows DPAPI and environment-variable secret storage
-- [x] OpenAI and DeepSeek Responses-compatible clients
+- [x] OpenAI、DeepSeek 与智谱 GLM BYOK clients
 - [x] Explicit AI resume structuring with strict schemas
 - [x] Privacy-minimized semantic matching and hard-requirement extraction
-- [x] OpenAI hosted web search with citation and public-URL verification
+- [x] OpenAI hosted web search and 智谱 GLM `web-search-pro`, with public-URL verification
 - [x] Grounded AI application package with source-id validation
 - [ ] OCR for scanned resumes
 - [ ] Linux Secret Service persistence

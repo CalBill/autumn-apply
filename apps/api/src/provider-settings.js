@@ -26,6 +26,7 @@ const DPAPI_UNPROTECT_SCRIPT = [
 export const PROVIDERS = Object.freeze({
   openai: { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna", envKey: "OPENAI_API_KEY", webSearch: true },
   deepseek: { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com", model: "deepseek-flash", envKey: "DEEPSEEK_API_KEY", webSearch: false },
+  zhipu: { id: "zhipu", label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash", envKey: "ZHIPU_API_KEY", webSearch: true, webSearchModel: "web-search-pro" },
 });
 
 function defaultConfigDirectory({ platform = process.platform, env = process.env } = {}) {

@@ -11,10 +11,44 @@ function endpoint(baseUrl, resource) {
   return new URL(resource.replace(/^\//, ""), `${baseUrl.replace(/\/$/, "")}/`).href;
 }
 
+function zhipuResponseText(body) {
+  return String(body?.choices?.[0]?.message?.content ?? "").trim();
+}
+
 export function createModelClient({ credentials, fetchImpl = fetch, timeoutMs = 60_000 }) {
   if (!credentials?.apiKey) throw new Error("缺少模型服务API Key");
 
   async function createResponse({ instructions, input, schema, schemaName = "autumn_apply_result", tools = [], toolChoice, include = [] }) {
+    if (credentials.provider === "zhipu") {
+      const schemaPrompt = schema
+        ? `\n\n必须只输出符合以下 JSON Schema 的 JSON，不要使用 Markdown 或补充说明：\n${JSON.stringify(schema)}`
+        : "";
+      const response = await fetchImpl(endpoint(credentials.baseUrl, "chat/completions"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${credentials.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: credentials.model,
+          messages: [
+            { role: "system", content: `${instructions || ""}${schemaPrompt}`.trim() },
+            { role: "user", content: input },
+          ],
+          temperature: 0.1,
+          stream: false,
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = payload?.error?.message || payload?.message || `模型服务请求失败：HTTP ${response.status}`;
+        throw Object.assign(new Error(message), { statusCode: response.status >= 500 ? 502 : 422 });
+      }
+      const text = zhipuResponseText(payload);
+      if (!text) throw Object.assign(new Error("智谱 GLM 没有返回文本结果"), { statusCode: 502 });
+      return { text, responseId: payload.id ?? null, usage: payload.usage ?? null, raw: payload };
+    }
     const body = {
       model: credentials.model,
       instructions,
@@ -46,6 +80,30 @@ export function createModelClient({ credentials, fetchImpl = fetch, timeoutMs = 
     return { text, responseId: payload.id ?? null, usage: payload.usage ?? null, raw: payload };
   }
 
+  async function searchWeb(query) {
+    if (credentials.provider !== "zhipu") throw new Error("当前模型服务不支持智谱联网搜索");
+    const response = await fetchImpl(endpoint(credentials.baseUrl, "chat/completions"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${credentials.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: credentials.webSearchModel || "web-search-pro",
+        messages: [{ role: "user", content: query }],
+        temperature: 0.1,
+        stream: false,
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = payload?.error?.message || payload?.message || `智谱联网搜索失败：HTTP ${response.status}`;
+      throw Object.assign(new Error(message), { statusCode: response.status >= 500 ? 502 : 422 });
+    }
+    return { raw: payload, usage: payload.usage ?? null };
+  }
+
   async function generateStructured(options) {
     const result = await createResponse(options);
     try {
@@ -55,7 +113,7 @@ export function createModelClient({ credentials, fetchImpl = fetch, timeoutMs = 
     }
   }
 
-  return { createResponse, generateStructured };
+  return { createResponse, generateStructured, searchWeb };
 }
 
 export function createConfiguredModelFactory({ settings, fetchImpl = fetch } = {}) {

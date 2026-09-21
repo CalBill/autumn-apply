@@ -19,7 +19,7 @@ test("opportunity verifier checks page evidence", async () => {
   assert.equal(result.signalsMatched, true);
 });
 
-test("AI web search requires OpenAI and verifies cited results", async () => {
+test("OpenAI AI web search verifies cited results", async () => {
   const opportunity = {
     company: "示例公司", title: "合规岗", location: "上海", description: "2027届", sourceUrl: "https://example.com/job",
     sourceTitle: "官方招聘", publishedAt: "2026-09-01", deadline: "2026-10-01", matchScore: 90, matchReason: "经历匹配", hardRequirementRisk: "",
@@ -35,5 +35,25 @@ test("AI web search requires OpenAI and verifies cited results", async () => {
   });
   assert.equal(result.opportunities.length, 1);
   assert.equal(result.opportunities[0].verification.status, "verified");
-  await assert.rejects(() => searchJobsWithAi({ profile: {}, model, provider: "deepseek" }), /仅OpenAI/);
+  await assert.rejects(() => searchJobsWithAi({ profile: {}, model, provider: "deepseek" }), /OpenAI 或智谱/);
+});
+
+test("Zhipu web search keeps only returned links and applies local matching", async () => {
+  const model = {
+    searchWeb: async () => ({ raw: {
+      choices: [{ message: { tool_calls: [{ search_result: [{
+        title: "某集团2027届合规管培生校园招聘", content: "工作地点上海，面向2027届毕业生。", link: "https://example.com/job", media_name: "某集团", publish_date: "2026-09-20",
+      }] }] } }],
+    } }),
+  };
+  const result = await searchJobsWithAi({
+    profile: { education: [], experiences: [], projects: [], skills: [], qualifications: {}, preferences: { roles: ["合规"], locations: ["上海"], graduationYear: "2027", excludedKeywords: [] } },
+    instructions: { roles: ["合规"], locations: ["上海"], maximumResults: 5 },
+    model, provider: "zhipu", resolveHost: publicDns,
+    fetchImpl: async () => new Response("某集团2027届合规管培生校园招聘", { status: 200, headers: { "Content-Type": "text/html" } }),
+  });
+  assert.equal(result.opportunities.length, 1);
+  assert.equal(result.opportunities[0].company, "某集团");
+  assert.equal(result.opportunities[0].location, "上海");
+  assert.equal(result.opportunities[0].verification.status, "verified");
 });

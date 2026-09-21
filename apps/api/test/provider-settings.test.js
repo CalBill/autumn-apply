@@ -10,6 +10,9 @@ test("provider configuration only accepts official endpoints", () => {
     provider: "deepseek", baseUrl: "https://api.deepseek.com", model: "deepseek-flash",
   });
   assert.throws(() => normalizeProviderConfig({ provider: "openai", baseUrl: "https://proxy.example" }), /官方 API/);
+  assert.deepEqual(normalizeProviderConfig({ provider: "zhipu" }), {
+    provider: "zhipu", baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash",
+  });
 });
 
 test("macOS key store never returns secrets in status", async () => {

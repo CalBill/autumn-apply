@@ -50,7 +50,7 @@ Optionally import a text-based PDF or DOCX resume. Confirm local parsing fills o
 ## 3. Configure optional BYOK AI
 
 1. Keep this step skipped to confirm the rest of the extension works without any API key.
-2. If testing BYOK, choose OpenAI or DeepSeek in the options page and enter a test key.
+2. If testing BYOK, choose OpenAI, 智谱 GLM or DeepSeek in the options page and enter a test key.
 3. Confirm the key is not shown again after saving and is present in macOS Keychain or Windows current-user DPAPI storage rather than Chrome storage.
 4. Click **测试连接** and confirm the provider/model result is displayed.
 5. Delete the key and confirm AI requests fail with a clear configuration message.
@@ -72,7 +72,7 @@ Optionally add one extra official source using `公司名 | https://官方招聘
 
 This step uses public career APIs and Sogou Weixin, so it requires network access. It sends search terms and the graduation cohort used to refine article search—not the candidate's name, contact details or resume. Sogou may request a CAPTCHA; confirm the extension reports that condition and stops.
 
-With OpenAI BYOK configured, click **AI联网补充搜索**. Confirm returned links carry a verification status. With DeepSeek selected, confirm the UI explains that hosted web search is unavailable instead of silently pretending to search.
+With OpenAI or 智谱 GLM BYOK configured, click **AI联网补充搜索**. Confirm returned links carry a verification status. With 智谱 GLM, confirm the search succeeds through `web-search-pro` and no API key appears in the browser. With DeepSeek selected, confirm the UI explains that hosted web search is unavailable instead of silently pretending to search.
 
 ## 5. Prepare one application
 

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import net from "node:net";
 import { sanitizeProfileForModel } from "./ai-workflows.js";
+import { analyzeJob } from "../../extension/shared/matcher.js";
 
 const STRING = { type: "string" };
 const SEARCH_SCHEMA = {
@@ -128,8 +129,105 @@ function sameSource(candidate, sources) {
   }
 }
 
+function unique(values) {
+  return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
+}
+
+function buildZhipuQueries(query) {
+  const cohort = query.graduationYear ? `${query.graduationYear}届` : "应届生";
+  const roles = query.roles.length ? query.roles.slice(0, 3) : ["管培生"];
+  const locations = query.locations.slice(0, 3);
+  const preferenceTerms = unique([...query.requiredKeywords, ...query.roles]).slice(0, 3).join(" ");
+  const locationSuffix = locations.length ? ` ${locations.join(" ")}` : "";
+  const roleQueries = roles.map((role) => `${cohort} 校园招聘 ${role}${locationSuffix} 官方招聘 网申`);
+  const broadQuery = `${cohort} 秋招${locationSuffix} ${preferenceTerms} 国企 央企 金融 官方招聘`;
+  return unique([...roleQueries, broadQuery]).slice(0, 4);
+}
+
+function collectZhipuSearchResults(raw) {
+  const results = [];
+  function visit(value, key = "") {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => visit(item, key));
+      return;
+    }
+    if (key === "search_result" || key === "search_results") {
+      const url = String(value.link ?? value.url ?? value.web_url ?? "").trim();
+      if (url.startsWith("https://")) results.push(value);
+    }
+    for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
+  }
+  visit(raw);
+  return results;
+}
+
+function dateFromSearchResult(value) {
+  const match = String(value ?? "").match(/(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
+  return match ? `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}` : null;
+}
+
+function locationFromSearchResult(text, locations) {
+  return locations.find((location) => String(text).includes(location)) ?? "";
+}
+
+function companyFromSearchResult(result, sourceUrl) {
+  const named = String(result.media_name ?? result.mediaName ?? result.source ?? result.site_name ?? "").trim();
+  if (named) return named.slice(0, 120);
+  try {
+    return new URL(sourceUrl).hostname.replace(/^www\./, "");
+  } catch {
+    return "待核验招聘来源";
+  }
+}
+
+async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHost }) {
+  if (typeof model?.searchWeb !== "function") throw Object.assign(new Error("智谱 GLM 联网搜索组件不可用，请重新启动本机服务"), { statusCode: 503 });
+  const rawResults = [];
+  for (const searchQuery of buildZhipuQueries(query)) {
+    const response = await model.searchWeb(`请检索并返回与以下条件相关的公开招聘网页和招聘公告：${searchQuery}。优先企业官网、官方招聘系统和高校就业网；排除销售、外包、社招和要求两年以上全职经验的职位。`);
+    rawResults.push(...collectZhipuSearchResults(response.raw));
+  }
+  const seen = new Set();
+  const candidates = rawResults.filter((result) => {
+    const sourceUrl = String(result.link ?? result.url ?? result.web_url ?? "").trim();
+    if (!sourceUrl || seen.has(sourceUrl)) return false;
+    seen.add(sourceUrl);
+    const text = `${result.title ?? ""} ${result.content ?? result.snippet ?? ""}`;
+    return !query.excludedKeywords.some((keyword) => keyword && text.includes(keyword));
+  }).slice(0, query.maximumResults);
+  const opportunities = [];
+  for (const result of candidates) {
+    const sourceUrl = String(result.link ?? result.url ?? result.web_url).trim();
+    const title = String(result.title ?? "招聘线索").trim().slice(0, 300);
+    const description = String(result.content ?? result.snippet ?? "").trim().slice(0, 8_000);
+    const job = {
+      title,
+      company: companyFromSearchResult(result, sourceUrl),
+      location: locationFromSearchResult(`${title} ${description}`, query.locations),
+      description,
+      sourceUrl,
+      publishedAt: dateFromSearchResult(result.publish_date ?? result.publishTime ?? result.time),
+    };
+    const verification = await verifyOpportunity(job, { fetchImpl, resolveHost });
+    const assessment = analyzeJob(job, profile);
+    const id = `zhipu-web:${createHash("sha256").update(`${sourceUrl}|${title}`).digest("hex").slice(0, 20)}`;
+    opportunities.push({
+      ...job,
+      id,
+      sourceUrl: verification.finalUrl || sourceUrl,
+      sourceTitle: title,
+      deadline: "",
+      matchScore: assessment.score,
+      matchReason: assessment.strengths.join("；") || "来自智谱联网搜索，仍需核验岗位要求",
+      hardRequirementRisk: assessment.hardRequirementsMet ? "" : assessment.gaps.join("；"),
+      verification,
+    });
+  }
+  return { opportunities, citedSources: candidates.map((item) => String(item.link ?? item.url ?? item.web_url)), searchedAt: new Date().toISOString(), disclosedFields: Object.keys(profile) };
+}
+
 export async function searchJobsWithAi({ profile, instructions = {}, model, provider, fetchImpl = fetch, resolveHost } = {}) {
-  if (provider !== "openai") throw Object.assign(new Error("当前仅OpenAI配置支持托管网页搜索；DeepSeek仍可用于简历结构化和岗位匹配"), { statusCode: 409 });
   const safeProfile = sanitizeProfileForModel(profile);
   const query = {
     roles: Array.isArray(instructions.roles) ? instructions.roles.slice(0, 10) : safeProfile.preferences.roles,
@@ -139,6 +237,10 @@ export async function searchJobsWithAi({ profile, instructions = {}, model, prov
     graduationYear: safeProfile.preferences.graduationYear,
     maximumResults: Math.min(20, Math.max(1, Number(instructions.maximumResults) || 10)),
   };
+  if (provider === "zhipu") {
+    return searchJobsWithZhipu({ profile: safeProfile, query, model, fetchImpl, resolveHost });
+  }
+  if (provider !== "openai") throw Object.assign(new Error("当前仅 OpenAI 或智谱 GLM 配置支持联网搜索；DeepSeek仍可用于简历结构化和岗位匹配"), { statusCode: 409 });
   const result = await model.generateStructured({
     schemaName: "job_web_search",
     schema: SEARCH_SCHEMA,
