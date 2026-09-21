@@ -133,6 +133,20 @@ function unique(values) {
   return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
 }
 
+async function mapWithConcurrency(items, limit, worker) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
 function buildZhipuQueries(query) {
   const cohort = query.graduationYear ? `${query.graduationYear}届` : "应届生";
   const roles = query.roles.length ? query.roles.slice(0, 3) : ["管培生"];
@@ -188,12 +202,12 @@ function companyFromSearchResult(result, sourceUrl) {
 
 async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHost }) {
   if (typeof model?.searchWeb !== "function") throw Object.assign(new Error("智谱 GLM 联网搜索组件不可用，请重新启动本机服务"), { statusCode: 503 });
-  const rawResults = [];
   const searchQueries = buildZhipuQueries(query);
-  for (const searchQuery of searchQueries) {
+  const queryResults = await mapWithConcurrency(searchQueries, 2, async (searchQuery) => {
     const response = await model.searchWeb(`请检索并返回与以下条件相关的公开招聘网页和招聘公告：${searchQuery}。优先企业官网、官方招聘系统和高校就业网；排除销售、外包、社招和要求两年以上全职经验的职位。`);
-    rawResults.push(...collectZhipuSearchResults(response.raw));
-  }
+    return collectZhipuSearchResults(response.raw);
+  });
+  const rawResults = queryResults.flat();
   const seen = new Set();
   const candidates = rawResults.filter((result) => {
     const sourceUrl = zhipuResultUrl(result);
@@ -202,8 +216,7 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
     const text = `${result.title ?? ""} ${result.content ?? result.snippet ?? ""}`;
     return !query.excludedKeywords.some((keyword) => keyword && text.includes(keyword));
   }).slice(0, query.maximumResults);
-  const opportunities = [];
-  for (const result of candidates) {
+  const opportunities = await mapWithConcurrency(candidates, 5, async (result) => {
     const sourceUrl = zhipuResultUrl(result);
     const title = String(result.title ?? "招聘线索").trim().slice(0, 300);
     const description = String(result.content ?? result.snippet ?? "").trim().slice(0, 8_000);
@@ -218,7 +231,7 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
     const verification = await verifyOpportunity(job, { fetchImpl, resolveHost });
     const assessment = analyzeJob(job, profile);
     const id = `zhipu-web:${createHash("sha256").update(`${sourceUrl}|${title}`).digest("hex").slice(0, 20)}`;
-    opportunities.push({
+    return {
       ...job,
       id,
       sourceUrl: verification.finalUrl || sourceUrl,
@@ -228,8 +241,8 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
       matchReason: assessment.strengths.join("；") || "来自智谱联网搜索，仍需核验岗位要求",
       hardRequirementRisk: assessment.hardRequirementsMet ? "" : assessment.gaps.join("；"),
       verification,
-    });
-  }
+    };
+  });
   return {
     opportunities,
     citedSources: candidates.map(zhipuResultUrl),
