@@ -40,9 +40,11 @@ test("OpenAI AI web search verifies cited results", async () => {
 
 test("Zhipu web search keeps only returned links and applies local matching", async () => {
   let calls = 0;
+  const queries = [];
   const model = {
-    searchWeb: async () => {
+    searchWeb: async (query) => {
       calls += 1;
+      queries.push(query);
       return { raw: {
       choices: [{ message: { tool_calls: [{ search_result: [{
         title: "某集团2027届合规管培生校园招聘", content: "工作地点上海，面向2027届毕业生。", refer: "https://example.com/job", media_name: "某集团", publish_date: "2026-09-20",
@@ -61,5 +63,6 @@ test("Zhipu web search keeps only returned links and applies local matching", as
   assert.equal(result.opportunities[0].location, "上海");
   assert.equal(result.opportunities[0].verification.status, "verified");
   assert.equal(calls, 2);
+  assert.deepEqual(queries, ["2027届 校园招聘 合规 上海 官方招聘 网申", "2027届 秋招 上海 合规 国企 央企 金融 官方招聘"]);
   assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, displayed: 1 });
 });

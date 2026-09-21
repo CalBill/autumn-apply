@@ -204,7 +204,10 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
   if (typeof model?.searchWeb !== "function") throw Object.assign(new Error("智谱 GLM 联网搜索组件不可用，请重新启动本机服务"), { statusCode: 503 });
   const searchQueries = buildZhipuQueries(query);
   const queryResults = await mapWithConcurrency(searchQueries, 2, async (searchQuery) => {
-    const response = await model.searchWeb(`请检索并返回与以下条件相关的公开招聘网页和招聘公告：${searchQuery}。优先企业官网、官方招聘系统和高校就业网；排除销售、外包、社招和要求两年以上全职经验的职位。`);
+    // web-search-pro is a search tool, not a chat planner: concise search-style queries
+    // consistently return its structured `search_result` records. Local filters below
+    // enforce the user's exclusions before anything is displayed.
+    const response = await model.searchWeb(searchQuery);
     return collectZhipuSearchResults(response.raw);
   });
   const rawResults = queryResults.flat();
