@@ -4,8 +4,9 @@ import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery
 import { createAiDiscoveryOutput, mergeDiscoveryOutputs } from "./shared/discovery-output.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
+import { buildWechatSearchPlan, createWechatSearchUrl } from "./shared/providers/wechat.js";
 import { normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
-import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, loadSearchMonitor, saveApplications, saveCompanySources, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
+import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, loadSearchMonitor, loadWechatImportedArticles, saveApplications, saveCompanySources, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
 import { analyzeJobWithAi, searchJobsWithAi } from "./shared/local-api.js";
 
 const form = document.querySelector("#search-form");
@@ -21,6 +22,7 @@ let applications = await loadApplications();
 let discovery = await loadDiscovery();
 let companySources = await loadCompanySources();
 let searchMonitor = normalizeSearchMonitor(await loadSearchMonitor());
+let importedWechatArticles = await loadWechatImportedArticles();
 
 function list(element, items, emptyText) {
   element.replaceChildren();
@@ -180,6 +182,18 @@ function readInstructions() {
   return Object.fromEntries(data.entries());
 }
 
+function currentWechatPlan() {
+  const instructions = normalizeDiscoveryInstructions(readInstructions(), profile);
+  return buildWechatSearchPlan({
+    queries: instructions.queries,
+    locations: instructions.locations,
+    industries: instructions.industries,
+    companyTypes: instructions.companyTypes,
+    focusKeywords: instructions.wechatKeywords,
+    graduationYear: profile.preferences.graduationYear,
+  });
+}
+
 async function saveMonitor(instructions, results) {
   searchMonitor = updateMonitorAfterSearch({
     ...searchMonitor,
@@ -225,10 +239,11 @@ form.addEventListener("submit", async (event) => {
     const parsedSources = parseCompanySourceText(form.elements.companySources.value);
     if (parsedSources.errors.length) throw new Error(parsedSources.errors.join("；"));
     companySources = await saveCompanySources(parsedSources.sources);
+    importedWechatArticles = await loadWechatImportedArticles();
     const output = await discoverJobs({
       profile,
       instructions: readInstructions(),
-      providers: createDiscoveryProviders(fetch, companySources),
+      providers: createDiscoveryProviders(fetch, companySources, importedWechatArticles),
       onProgress: (message) => { statusElement.textContent = message; },
     });
     await persistDiscovery(output);
@@ -240,6 +255,16 @@ form.addEventListener("submit", async (event) => {
   } finally {
     button.disabled = false;
   }
+});
+
+document.querySelector("#wechat-browser-search").addEventListener("click", async () => {
+  const query = currentWechatPlan()[0];
+  if (!query) {
+    statusElement.textContent = "请先填写目标岗位或在资料库中设置目标方向。";
+    return;
+  }
+  await chrome.tabs.create({ url: createWechatSearchUrl(query) });
+  statusElement.textContent = `已在普通浏览器标签页打开“${query}”。如出现验证码，请由你完成；结果页会自动导入公开招聘线索。`;
 });
 
 document.querySelector("#ai-search-button").addEventListener("click", async (event) => {

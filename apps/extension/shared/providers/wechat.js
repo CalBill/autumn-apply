@@ -109,6 +109,10 @@ function searchUrl(query) {
   return `${SEARCH_URL}?${params}`;
 }
 
+export function createWechatSearchUrl(query) {
+  return searchUrl(query);
+}
+
 function preferenceChannelTerms({ industries = [], companyTypes = [] } = {}) {
   return unique([...companyTypes, ...industries].flatMap((value) => [
     ...(PREFERENCE_CHANNEL_TERMS[value] ?? []),
@@ -254,7 +258,7 @@ function mergeArticle(current, incoming) {
   return { ...preferred, metadata: { ...preferred.metadata, matchedQueries, seenAccounts } };
 }
 
-export async function searchWechatArticles(input, fetchImpl = fetch) {
+export async function searchWechatArticles(input, fetchImpl = fetch, importedArticles = []) {
   const page = Math.max(1, Number(input.page) || 1);
   const pageSize = Math.min(60, Math.max(1, Number(input.pageSize) || 20));
   const searchPlan = buildWechatSearchPlan(input);
@@ -273,6 +277,10 @@ export async function searchWechatArticles(input, fetchImpl = fetch) {
       break;
     }
   }
+  for (const article of importedArticles) {
+    if (!article?.id || article.sourceType !== "wechat-article") continue;
+    articles.set(article.id, mergeArticle(articles.get(article.id), article));
+  }
   const jobs = [...articles.values()].sort((a, b) => {
     const quality = (b.metadata?.qualityScore ?? 0) - (a.metadata?.qualityScore ?? 0);
     if (quality) return quality;
@@ -289,13 +297,13 @@ export async function searchWechatArticles(input, fetchImpl = fetch) {
   };
 }
 
-export function createWechatProvider(fetchImpl = fetch) {
+export function createWechatProvider(fetchImpl = fetch, importedArticles = []) {
   return {
     id: "wechat-sogou",
     name: "微信公众号",
     kind: "wechat-article",
     batchSearch: true,
-    search: (input) => searchWechatArticles(input, fetchImpl),
+    search: (input) => searchWechatArticles(input, fetchImpl, importedArticles),
     detail: async (article) => article,
   };
 }

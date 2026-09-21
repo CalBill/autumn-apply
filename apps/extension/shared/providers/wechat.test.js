@@ -110,3 +110,12 @@ test("reports a redirected search homepage as a temporary restriction", async ()
   assert.equal(output.jobs.length, 0);
   assert.match(output.warnings[0], /临时访问限制/);
 });
+
+test("keeps browser-imported public WeChat results when Sogou background access is restricted", async () => {
+  const imported = parseSogouWechatArticles(fixture, "数据分析");
+  const fetchImpl = async (url) => ({ ok: true, status: 200, url, text: async () => "请输入验证码" });
+  const output = await searchWechatArticles({ query: "数据分析", graduationYear: "2027" }, fetchImpl, imported);
+  assert.equal(output.jobs.length, 1);
+  assert.equal(output.jobs[0].metadata.importedFromBrowser, undefined);
+  assert.match(output.warnings[0], /不会绕过/);
+});

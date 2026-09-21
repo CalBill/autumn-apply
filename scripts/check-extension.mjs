@@ -32,7 +32,7 @@ for (const path of [
   "prepare.html", "prepare.js", "prepare.css",
   "dashboard.html", "dashboard.js", "dashboard.css",
   "print-resume.html", "print-resume.js", "print-resume.css",
-  "background.js", "icon.svg", "shared/search-monitor.js",
+  "background.js", "wechat-page-importer.js", "icon.svg", "shared/search-monitor.js",
   "shared/profile.js", "shared/storage.js", "shared/matcher.js", "shared/resume.js", "shared/page-actions.js",
   "shared/form-mapping.js", "shared/applications.js",
   "shared/form-adapters.js",

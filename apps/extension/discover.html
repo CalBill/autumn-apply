@@ -28,13 +28,14 @@
             <label>最近天数<input name="recentDays" type="number" min="1" max="365" /></label>
           </div>
           <button id="search-button" class="primary" type="submit">开始寻找岗位</button>
+          <button id="wechat-browser-search" class="secondary" type="button">在浏览器中采集公众号结果</button>
           <button id="ai-search-button" class="secondary" type="button">AI联网补充搜索</button>
           <div class="monitor-setting">
             <label><input name="monitorEnabled" type="checkbox" />自动检查新岗位</label>
             <label>检查频率<select name="intervalHours"><option value="12">每12小时</option><option value="24">每天</option><option value="72">每3天</option></select></label>
             <small id="monitor-status">后台只运行基础搜索，不调用 AI；只有发现新岗位时通知。</small>
           </div>
-          <p class="boundary">基础搜索只读取公开信息，不发送个人资料。公众号搜索会低频、顺序执行且不重试；出现验证码或临时限制后立即停止。点击“AI深度分析”后，仅会发送教育、经历、技能和求职偏好，不发送姓名、邮箱或手机号。公众号结果始终标注为待核验。</p>
+          <p class="boundary">基础搜索只读取公开信息，不发送个人资料。公众号后台搜索会低频、顺序执行且不重试；受限时可用“在浏览器中采集公众号结果”，由普通页面加载后自动导入公开结果，不绕过验证码。点击“AI深度分析”后，仅会发送教育、经历、技能和求职偏好，不发送姓名、邮箱或手机号。公众号结果始终标注为待核验。</p>
         </form>
       </aside>
 
