@@ -26,7 +26,7 @@ export function normalizeDiscoveryInstructions(input = {}, profile) {
       ? splitList(input.excludedKeywords)
       : profile.preferences.excludedKeywords ?? [],
     minimumScore: Math.min(100, Math.max(0, Number(input.minimumScore) || profile.preferences.minimumScore || 60)),
-    maxResults: Math.min(30, Math.max(1, Number(input.maxResults) || 15)),
+    maxResults: Math.min(50, Math.max(1, Number(input.maxResults) || 15)),
     recentDays: Math.min(365, Math.max(1, Number(input.recentDays) || 90)),
   };
 }
@@ -223,22 +223,24 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
     return { job, assessment, ...classification };
   });
   const tierOrder = { recommended: 0, potential: 1, review: 2, "not-recommended": 3, excluded: 4 };
-  const results = candidates
+  const allResults = candidates
     .filter((entry) => entry.tier !== "excluded")
     .sort((a, b) => tierOrder[a.tier] - tierOrder[b.tier]
       || b.assessment.score - a.assessment.score
-      || String(b.job.publishedAt ?? "").localeCompare(String(a.job.publishedAt ?? "")))
-    .slice(0, instructions.maxResults);
+      || String(b.job.publishedAt ?? "").localeCompare(String(a.job.publishedAt ?? "")));
+  const results = allResults.slice(0, instructions.maxResults);
 
   return {
     instructions,
     results,
+    allResults,
     sourceStats,
     errors,
     coverage: {
       fetched: summaries.length,
       considered: deduplicated.length,
       displayed: results.length,
+      available: allResults.length,
       ...tiers,
     },
     searchedAt: new Date().toISOString(),

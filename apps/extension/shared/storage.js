@@ -102,6 +102,10 @@ function serializeDiscovery(discovery) {
       const job = normalizeJob(entry.job ?? entry.assessment?.job);
       return { ...entry, job, assessment: serializeAssessment(entry.assessment, job) };
     }),
+    allResults: Array.isArray(discovery.allResults) ? discovery.allResults.map((entry) => {
+      const job = normalizeJob(entry.job ?? entry.assessment?.job);
+      return { ...entry, job, assessment: serializeAssessment(entry.assessment, job) };
+    }) : undefined,
   };
 }
 
@@ -113,6 +117,10 @@ function hydrateDiscovery(discovery) {
       const job = normalizeJob(entry.job ?? entry.assessment?.job);
       return { ...entry, job, assessment: hydrateAssessment(entry.assessment, job) };
     }),
+    allResults: Array.isArray(discovery.allResults) ? discovery.allResults.map((entry) => {
+      const job = normalizeJob(entry.job ?? entry.assessment?.job);
+      return { ...entry, job, assessment: hydrateAssessment(entry.assessment, job) };
+    }) : undefined,
   };
 }
 

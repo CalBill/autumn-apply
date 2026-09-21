@@ -64,7 +64,7 @@ test("Zhipu web search keeps only returned links and applies local matching", as
   assert.equal(result.opportunities[0].verification.status, "verified");
   assert.equal(calls, 2);
   assert.deepEqual(queries, ["2027届 校园招聘 合规 上海 官方招聘 网申", "2027届 秋招 上海 合规 国企 央企 金融 官方招聘"]);
-  assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, displayed: 1 });
+  assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, rejected: 0, displayed: 1 });
 });
 
 test("Zhipu web search recovers official links embedded in current result excerpts", async () => {
@@ -84,5 +84,25 @@ test("Zhipu web search recovers official links embedded in current result excerp
   });
   assert.equal(result.opportunities.length, 1);
   assert.equal(result.opportunities[0].sourceUrl, "https://example.com/campus/apply?job=2027");
-  assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, displayed: 1 });
+  assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, rejected: 0, displayed: 1 });
+});
+
+test("Zhipu web search removes clear graduation, city and experience mismatches before display", async () => {
+  const model = {
+    searchWeb: async () => ({ raw: {
+      choices: [{ message: { tool_calls: [{ search_result: [
+        { title: "2026届广州销售培训生", content: "面向2026届，广州工作，要求3年以上全职经验。https://example.com/mismatch", refer: "ref_1" },
+        { title: "2027届上海金融管培生", content: "面向2027届，上海工作。https://example.com/match", refer: "ref_2" },
+      ] }] } }],
+    } }),
+  };
+  const result = await searchJobsWithAi({
+    profile: { education: [{ degree: "本科" }], experiences: [], projects: [], skills: [], qualifications: {}, preferences: { roles: ["金融"], locations: ["上海"], graduationYear: "2027", experienceYears: 0, excludedKeywords: ["销售"] } },
+    instructions: { roles: ["金融"], locations: ["上海"], excludedKeywords: ["销售"], maximumResults: 5 },
+    model, provider: "zhipu", resolveHost: publicDns,
+    fetchImpl: async () => new Response("2027届上海金融管培生", { status: 200, headers: { "Content-Type": "text/html" } }),
+  });
+  assert.equal(result.opportunities.length, 1);
+  assert.equal(result.opportunities[0].sourceUrl, "https://example.com/match");
+  assert.equal(result.searchStats.rejected, 1);
 });

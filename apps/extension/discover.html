@@ -24,7 +24,7 @@
           <label>额外企业官网来源<textarea name="companySources" rows="5" placeholder="公司名 | https://官方招聘入口"></textarea><small>每行一个。支持 Moka、飞书招聘、Greenhouse、Lever、Ashby；必须填写公司官网实际跳转到的招聘入口。</small></label>
           <div class="grid">
             <label>最低匹配分<input name="minimumScore" type="number" min="0" max="100" /></label>
-            <label>最多返回<input name="maxResults" type="number" min="1" max="30" /></label>
+            <label>每批显示<input name="maxResults" type="number" min="1" max="50" /><small>首批后可继续查看下一批。</small></label>
             <label>最近天数<input name="recentDays" type="number" min="1" max="365" /></label>
           </div>
           <button id="search-button" class="primary" type="submit">开始寻找岗位</button>
@@ -46,6 +46,7 @@
         </div>
         <div id="errors" class="errors hidden"></div>
         <div id="results" class="results"></div>
+        <div id="batch-navigation" class="batch-navigation panel hidden"><button id="previous-batch" class="secondary" type="button">上一批</button><span id="batch-status"></span><button id="next-batch" class="secondary" type="button">查看下一批</button></div>
         <div id="empty" class="empty panel">尚未搜索岗位。</div>
       </section>
     </main>

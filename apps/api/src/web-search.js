@@ -197,7 +197,14 @@ function dateFromSearchResult(value) {
 }
 
 function locationFromSearchResult(text, locations) {
-  return locations.find((location) => String(text).includes(location)) ?? "";
+  const value = String(text);
+  const preferred = locations.find((location) => value.includes(location));
+  if (preferred) return preferred;
+  // Use an explicit city only when it is visible in the returned result. This
+  // lets the hard filter reject, for example, a Guangzhou-only result for a
+  // Shanghai-only search without guessing a location from the company name.
+  const knownCities = ["北京", "上海", "深圳", "广州", "杭州", "南京", "苏州", "成都", "武汉", "西安", "重庆", "天津", "厦门", "青岛", "宁波", "大连", "香港", "澳门"];
+  return knownCities.find((location) => value.includes(location)) ?? "";
 }
 
 function companyFromSearchResult(result, sourceUrl) {
@@ -208,6 +215,44 @@ function companyFromSearchResult(result, sourceUrl) {
   } catch {
     return "待核验招聘来源";
   }
+}
+
+function textIncludesAny(text, values) {
+  const normalized = String(text ?? "").toLocaleLowerCase();
+  return values.some((value) => normalized.includes(String(value ?? "").toLocaleLowerCase()));
+}
+
+function postingOutsideWindow(job, recentDays) {
+  if (!job.publishedAt) return false;
+  const postedAt = Date.parse(`${job.publishedAt}T00:00:00+08:00`);
+  return Number.isFinite(postedAt) && Date.now() - postedAt > recentDays * 86_400_000;
+}
+
+function clearMismatchReasons(job, assessment, query) {
+  const text = `${job.title ?? ""} ${job.company ?? ""} ${job.location ?? ""} ${job.description ?? ""}`;
+  const reasons = [];
+  const excluded = query.excludedKeywords.filter((keyword) => keyword && textIncludesAny(text, [keyword]));
+  if (excluded.length) reasons.push(`命中排除词：${excluded.join("、")}`);
+  if (!assessment.hardRequirementsMet) reasons.push(...assessment.gaps.slice(0, 3));
+  if (query.locations.length && job.location && !textIncludesAny(job.location, query.locations)) {
+    reasons.push(`工作地点“${job.location}”不在指定城市中`);
+  }
+  if (postingOutsideWindow(job, query.recentDays)) reasons.push(`发布时间早于最近 ${query.recentDays} 天`);
+  return reasons;
+}
+
+function searchJobFromZhipuResult(result, query) {
+  const sourceUrl = zhipuResultUrl(result);
+  const title = String(result.title ?? "招聘线索").trim().slice(0, 300);
+  const description = String(result.content ?? result.snippet ?? "").trim().slice(0, 8_000);
+  return {
+    title,
+    company: companyFromSearchResult(result, sourceUrl),
+    location: locationFromSearchResult(`${title} ${description}`, query.locations),
+    description,
+    sourceUrl,
+    publishedAt: dateFromSearchResult(result.publish_date ?? result.publishTime ?? result.time),
+  };
 }
 
 async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHost }) {
@@ -226,29 +271,23 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
     const sourceUrl = zhipuResultUrl(result);
     if (!sourceUrl || seen.has(sourceUrl)) return false;
     seen.add(sourceUrl);
-    const text = `${result.title ?? ""} ${result.content ?? result.snippet ?? ""}`;
-    return !query.excludedKeywords.some((keyword) => keyword && text.includes(keyword));
-  }).slice(0, query.maximumResults);
-  const opportunities = await mapWithConcurrency(candidates, 5, async (result) => {
-    const sourceUrl = zhipuResultUrl(result);
-    const title = String(result.title ?? "招聘线索").trim().slice(0, 300);
-    const description = String(result.content ?? result.snippet ?? "").trim().slice(0, 8_000);
-    const job = {
-      title,
-      company: companyFromSearchResult(result, sourceUrl),
-      location: locationFromSearchResult(`${title} ${description}`, query.locations),
-      description,
-      sourceUrl,
-      publishedAt: dateFromSearchResult(result.publish_date ?? result.publishTime ?? result.time),
-    };
-    const verification = await verifyOpportunity(job, { fetchImpl, resolveHost });
+    return true;
+  });
+  const screened = candidates.map((result) => {
+    const job = searchJobFromZhipuResult(result, query);
     const assessment = analyzeJob(job, profile);
-    const id = `zhipu-web:${createHash("sha256").update(`${sourceUrl}|${title}`).digest("hex").slice(0, 20)}`;
+    return { result, job, assessment, rejected: clearMismatchReasons(job, assessment, query) };
+  });
+  const rejected = screened.filter((candidate) => candidate.rejected.length > 0);
+  const eligible = screened.filter((candidate) => candidate.rejected.length === 0).slice(0, query.maximumResults);
+  const opportunities = await mapWithConcurrency(eligible, 5, async ({ job, assessment }) => {
+    const verification = await verifyOpportunity(job, { fetchImpl, resolveHost });
+    const id = `zhipu-web:${createHash("sha256").update(`${job.sourceUrl}|${job.title}`).digest("hex").slice(0, 20)}`;
     return {
       ...job,
       id,
-      sourceUrl: verification.finalUrl || sourceUrl,
-      sourceTitle: title,
+      sourceUrl: verification.finalUrl || job.sourceUrl,
+      sourceTitle: job.title,
       deadline: "",
       matchScore: assessment.score,
       matchReason: assessment.strengths.join("；") || "来自智谱联网搜索，仍需核验岗位要求",
@@ -258,8 +297,8 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
   });
   return {
     opportunities,
-    citedSources: candidates.map(zhipuResultUrl),
-    searchStats: { provider: "zhipu", queries: searchQueries.length, returned: rawResults.length, candidates: candidates.length, displayed: opportunities.length },
+    citedSources: eligible.map(({ job }) => job.sourceUrl),
+    searchStats: { provider: "zhipu", queries: searchQueries.length, returned: rawResults.length, candidates: candidates.length, rejected: rejected.length, displayed: opportunities.length },
     searchedAt: new Date().toISOString(),
     disclosedFields: Object.keys(profile),
   };
@@ -273,7 +312,8 @@ export async function searchJobsWithAi({ profile, instructions = {}, model, prov
     requiredKeywords: Array.isArray(instructions.requiredKeywords) ? instructions.requiredKeywords.slice(0, 15) : [],
     excludedKeywords: Array.isArray(instructions.excludedKeywords) ? instructions.excludedKeywords.slice(0, 20) : [],
     graduationYear: safeProfile.preferences.graduationYear,
-    maximumResults: Math.min(20, Math.max(1, Number(instructions.maximumResults) || 10)),
+    recentDays: Math.min(365, Math.max(1, Number(instructions.recentDays) || 90)),
+    maximumResults: Math.min(50, Math.max(1, Number(instructions.maximumResults) || 10)),
   };
   if (provider === "zhipu") {
     return searchJobsWithZhipu({ profile: safeProfile, query, model, fetchImpl, resolveHost });
@@ -290,11 +330,21 @@ export async function searchJobsWithAi({ profile, instructions = {}, model, prov
   });
   const citedSources = collectWebSources(result.raw);
   const candidates = result.data.opportunities.slice(0, query.maximumResults).filter((item) => sameSource(item.sourceUrl, citedSources));
+  const screened = candidates.map((item) => {
+    const assessment = analyzeJob(item, safeProfile);
+    return { item, rejected: clearMismatchReasons(item, assessment, query) };
+  });
   const opportunities = [];
-  for (const item of candidates) {
+  for (const { item } of screened.filter((candidate) => candidate.rejected.length === 0)) {
     const verification = await verifyOpportunity(item, { fetchImpl, resolveHost });
     const id = `ai-web:${createHash("sha256").update(`${item.sourceUrl}|${item.title}`).digest("hex").slice(0, 20)}`;
     opportunities.push({ ...item, id, sourceUrl: verification.finalUrl || item.sourceUrl, verification });
   }
-  return { opportunities, citedSources, searchedAt: new Date().toISOString(), disclosedFields: Object.keys(safeProfile) };
+  return {
+    opportunities,
+    citedSources,
+    searchStats: { provider: "openai", returned: candidates.length, candidates: candidates.length, rejected: screened.length - opportunities.length, displayed: opportunities.length },
+    searchedAt: new Date().toISOString(),
+    disclosedFields: Object.keys(safeProfile),
+  };
 }

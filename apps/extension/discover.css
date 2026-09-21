@@ -42,6 +42,8 @@ button, .secondary { border: 0; border-radius: 9px; padding: 0.7rem 0.9rem; curs
 .summary p { margin: 0; color: var(--muted); }
 #search-status { align-self: center; max-width: 280px; color: var(--green); font-size: 0.82rem; text-align: right; }
 .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+.batch-navigation { display:flex; align-items:center; justify-content:center; gap:.75rem; padding:.75rem; color:var(--muted); font-size:.82rem; }
+.batch-navigation button:disabled { opacity:.45; cursor:not-allowed; }
 .job-card { display: grid; gap: 1rem; padding: 1.15rem; }
 .job-main { display: flex; justify-content: space-between; gap: 0.8rem; }
 .company { margin: 0 0 0.25rem; color: var(--orange); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; }

@@ -44,7 +44,8 @@ const progress = Math.round(completed / requiredSteps.length * 100);
 document.querySelector("#overall-progress").textContent = `${progress}%`;
 document.querySelector("#progress-bar").style.width = `${progress}%`;
 
-document.querySelector("#metric-discovered").textContent = String(discovery?.results?.length ?? 0);
+const discoveredResults = discovery?.allResults ?? discovery?.results ?? [];
+document.querySelector("#metric-discovered").textContent = String(discoveredResults.length);
 document.querySelector("#metric-preparing").textContent = String(applications.filter((item) => item.status === "preparing").length);
 document.querySelector("#metric-ready").textContent = String(applications.filter((item) => item.status === "prepared").length);
 document.querySelector("#metric-submitted").textContent = String(applications.filter((item) => item.status === "submitted").length);
@@ -104,5 +105,5 @@ renderApplications();
 
 if (discovery?.searchedAt) {
   const sources = (discovery.sourceStats ?? []).map((item) => `${item.name} ${item.fetched} 条`).join("；");
-  document.querySelector("#search-summary").textContent = `${new Date(discovery.searchedAt).toLocaleString()}：${discovery.results?.length ?? 0} 个候选岗位。${sources}`;
+  document.querySelector("#search-summary").textContent = `${new Date(discovery.searchedAt).toLocaleString()}：${discoveredResults.length} 个候选岗位。${sources}`;
 }

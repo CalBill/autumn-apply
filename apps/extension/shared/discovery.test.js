@@ -65,6 +65,21 @@ test("discovery keeps potential opportunities instead of silently filtering them
   assert.equal(output.results[1].job.id, "3");
   assert.equal(output.results[1].tier, "review");
   assert.equal(output.coverage.excluded, 1);
+  assert.equal(output.allResults.length, 2);
+});
+
+test("discovery retains a ranked pool beyond the first displayed batch", async () => {
+  const provider = {
+    id: "fixture", name: "合成岗位源",
+    search: async () => ({ jobs: Array.from({ length: 5 }, (_, index) => ({
+      id: `job-${index}`, providerId: `job-${index}`, title: "数据分析校招", company: `公司${index}`, location: "上海",
+    })) }),
+    detail: async (job) => ({ ...job, sourceUrl: `https://example.com/${job.id}`, sourcePlatform: "合成岗位源", description: "2027届校园招聘，本科及以上，要求 Python、SQL 和数据分析。" }),
+  };
+  const output = await discoverJobs({ profile, instructions: { queries: "数据分析", maxResults: 2 }, providers: [provider] });
+  assert.equal(output.results.length, 2);
+  assert.equal(output.allResults.length, 5);
+  assert.equal(output.coverage.available, 5);
 });
 
 test("discovery exposes low-confidence campus leads for review", async () => {
