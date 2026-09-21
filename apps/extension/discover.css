@@ -13,7 +13,8 @@ header p { margin: 0; color: #d9e6dd; }
 header a { color: #fff; }
 .eyebrow { margin: 0; color: #f1a273 !important; font-size: 0.72rem; font-weight: 850; letter-spacing: 0.14em; }
 main { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 1rem; width: min(1240px, calc(100% - 2rem)); margin: -1.5rem auto 5rem; align-items: start; }
-aside { position: sticky; top: 1rem; }
+/* Keep every discovery action reachable when the filter form is taller than the window. */
+aside { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .panel { border: 1px solid var(--line); border-radius: 17px; background: var(--panel); box-shadow: 0 12px 30px rgba(35, 46, 38, 0.06); }
 form { display: grid; gap: 1rem; padding: 1.25rem; }
 .source { display: flex; gap: 0.7rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
@@ -78,4 +79,4 @@ ul { margin: 0.35rem 0 0; padding-left: 1rem; color: #566158; font-size: 0.72rem
 .errors { padding: 0.8rem 1rem; border: 1px solid #e0a78b; border-radius: 12px; color: var(--danger); background: #fff0e8; font-size: 0.8rem; }
 .errors a { display: inline-block; margin-top: 0.45rem; color: var(--dark); font-weight: 800; }
 .hidden { display: none; }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { position: static; } .results { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { position: static; max-height: none; overflow: visible; } .results { grid-template-columns: 1fr; } }
