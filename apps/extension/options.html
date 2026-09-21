@@ -36,6 +36,7 @@
             <p>密钥交给本机服务，并存入 macOS 钥匙串或使用 Windows 当前用户 DPAPI 加密；浏览器不会读取或显示密钥。</p>
             <label>服务商<select name="provider"><option value="openai">OpenAI</option><option value="deepseek">DeepSeek</option><option value="zhipu">智谱 GLM（支持联网搜索）</option></select></label>
             <label>模型<input name="model" placeholder="gpt-5.6-luna" /></label>
+            <small id="provider-help">联网搜索仅在支持的服务商下可用。</small>
             <label>API Key<input name="apiKey" type="password" autocomplete="off" placeholder="仅在新增或更换时填写" /></label>
             <div class="button-row">
               <button class="primary" type="submit">保存AI配置</button>
