@@ -76,5 +76,6 @@ ul { margin: 0.35rem 0 0; padding-left: 1rem; color: #566158; font-size: 0.72rem
 .ai-match:disabled { opacity: 0.6; cursor: wait; }
 .empty { padding: 3rem; color: var(--muted); text-align: center; }
 .errors { padding: 0.8rem 1rem; border: 1px solid #e0a78b; border-radius: 12px; color: var(--danger); background: #fff0e8; font-size: 0.8rem; }
+.errors a { display: inline-block; margin-top: 0.45rem; color: var(--dark); font-weight: 800; }
 .hidden { display: none; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { position: static; } .results { grid-template-columns: 1fr; } }

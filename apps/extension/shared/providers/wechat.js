@@ -24,6 +24,15 @@ const ROLE_ALIASES = {
   合规: ["风控", "内控", "法律合规"],
   管培生: ["管理培训生", "管培"],
 };
+const PREFERENCE_CHANNEL_TERMS = {
+  金融: ["银行招聘", "证券招聘", "基金招聘", "金融招聘"],
+  国央企: ["国资小新", "央企招聘", "国企招聘"],
+  央企: ["国资小新", "央企招聘"],
+  国企: ["国资小新", "国企招聘"],
+  航运: ["航运招聘", "船员招聘"],
+  石油: ["石油招聘", "能源招聘"],
+  海油: ["海油招聘", "能源招聘"],
+};
 
 function attribute(tag, name) {
   const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
@@ -100,6 +109,15 @@ function searchUrl(query) {
   return `${SEARCH_URL}?${params}`;
 }
 
+function preferenceChannelTerms({ industries = [], companyTypes = [] } = {}) {
+  return unique([...companyTypes, ...industries].flatMap((value) => [
+    ...(PREFERENCE_CHANNEL_TERMS[value] ?? []),
+    ...Object.entries(PREFERENCE_CHANNEL_TERMS)
+      .filter(([key]) => String(value).includes(key))
+      .flatMap(([, terms]) => terms),
+  ]));
+}
+
 export function buildWechatSearchPlan({
   query = "",
   queries = [],
@@ -114,7 +132,8 @@ export function buildWechatSearchPlan({
   const cohort = graduationYear ? `${graduationYear}届` : "应届生";
   const planned = [];
   for (const role of roles) planned.push(`${role} ${cohort} 校招`);
-  for (const keyword of unique(focusKeywords).slice(0, 3)) {
+  const channelTerms = unique([...focusKeywords, ...preferenceChannelTerms({ industries, companyTypes })]);
+  for (const keyword of channelTerms.slice(0, 4)) {
     planned.push(`${keyword} ${cohort} 招聘`);
     planned.push(`${keyword} 校招`);
   }
@@ -259,7 +278,15 @@ export async function searchWechatArticles(input, fetchImpl = fetch) {
     if (quality) return quality;
     return String(b.publishedAt ?? "").localeCompare(String(a.publishedAt ?? ""));
   }).slice(0, pageSize);
-  return { jobs, total: jobs.length, page, searchPlan, searchedQueries, warnings };
+  return {
+    jobs,
+    total: jobs.length,
+    page,
+    searchPlan,
+    searchedQueries,
+    warnings,
+    manualSearchUrls: searchPlan.map((query) => ({ query, url: searchUrl(query) })),
+  };
 }
 
 export function createWechatProvider(fetchImpl = fetch) {

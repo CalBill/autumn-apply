@@ -183,6 +183,7 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
         fetched,
         searchedQueries: output.searchedQueries?.length ?? 0,
         plannedQueries: output.searchPlan?.length ?? 0,
+        manualSearchUrls: output.manualSearchUrls ?? [],
       });
     } catch (error) {
       errors.push(`${provider.name}：${error.message}`);

@@ -56,8 +56,21 @@ function renderResults(output) {
     sourceSummary,
     `机会池：读取 ${coverage.fetched ?? 0} 条，评估 ${coverage.considered ?? 0} 条，${tiers}`,
   ].filter(Boolean).join("。 ");
+  errorsElement.replaceChildren();
   errorsElement.classList.toggle("hidden", output.errors.length === 0);
-  errorsElement.textContent = output.errors.length ? `部分结果不完整：${output.errors.join("；")}` : "";
+  if (output.errors.length) {
+    errorsElement.append(`部分结果不完整：${output.errors.join("；")}`);
+    const wechat = output.sourceStats.find((source) => source.id === "wechat-sogou");
+    const fallback = wechat?.manualSearchUrls?.[0];
+    if (fallback) {
+      const link = document.createElement("a");
+      link.href = fallback.url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = `在浏览器中继续搜公众号：${fallback.query}`;
+      errorsElement.append(document.createElement("br"), link);
+    }
+  }
 
   for (const entry of output.results) {
     const card = document.querySelector("#result-template").content.firstElementChild.cloneNode(true);

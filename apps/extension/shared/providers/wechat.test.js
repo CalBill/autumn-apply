@@ -59,6 +59,14 @@ test("WeChat plans include generic campus queries when an exact cohort is sparse
   assert.ok(plan.length <= 10);
 });
 
+test("WeChat plans seed recruitment-channel terms from industry and company preferences", () => {
+  const plan = buildWechatSearchPlan({
+    queries: ["合规"], graduationYear: "2027", industries: ["金融"], companyTypes: ["央企"], maxRequests: 10,
+  });
+  assert.ok(plan.includes("银行招聘 2027届 招聘"));
+  assert.ok(plan.includes("国资小新 2027届 招聘"));
+});
+
 test("adds a recruitment signal to generic user queries", async () => {
   const requestedUrls = [];
   const fetchImpl = async (url) => {
@@ -69,6 +77,8 @@ test("adds a recruitment signal to generic user queries", async () => {
   assert.match(decodeURIComponent(requestedUrls[0]), /query=数据分析\+2027届\+校招/);
   assert.equal(output.jobs.length, 1);
   assert.ok(output.searchPlan.includes("数据分析 校园招聘"));
+  assert.equal(output.manualSearchUrls[0].query, "数据分析 2027届 校招");
+  assert.match(output.manualSearchUrls[0].url, /weixin\?type=2/);
 });
 
 test("deduplicates reposted articles across planned queries", async () => {
