@@ -53,6 +53,9 @@ function classifyCandidate(job, assessment, instructions) {
   const reasons = [];
   const excludedBy = instructions.excludedKeywords.filter((keyword) => containsAny(text, [keyword]));
   if (excludedBy.length) return { tier: "excluded", reasons: [`命中排除条件：${excludedBy.join("、")}`] };
+  if (!assessment.hardRequirementsMet) {
+    return { tier: "not-recommended", reasons: ["已识别到不满足的硬性条件", ...assessment.gaps.slice(0, 2)] };
+  }
 
   const locationMismatch = instructions.locations.length && job.location
     && !containsAny(job.location, instructions.locations);
@@ -211,14 +214,14 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
     }
   });
 
-  const tiers = { recommended: 0, potential: 0, review: 0, excluded: 0 };
+  const tiers = { recommended: 0, potential: 0, review: 0, "not-recommended": 0, excluded: 0 };
   const candidates = detailed.filter(Boolean).map((job) => {
     const assessment = analyzeJob(job, profile);
     const classification = classifyCandidate(job, assessment, instructions);
     tiers[classification.tier] += 1;
     return { job, assessment, ...classification };
   });
-  const tierOrder = { recommended: 0, potential: 1, review: 2, excluded: 3 };
+  const tierOrder = { recommended: 0, potential: 1, review: 2, "not-recommended": 3, excluded: 4 };
   const results = candidates
     .filter((entry) => entry.tier !== "excluded")
     .sort((a, b) => tierOrder[a.tier] - tierOrder[b.tier]

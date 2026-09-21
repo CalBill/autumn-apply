@@ -49,6 +49,7 @@ function renderResults(output) {
     `推荐 ${coverage.recommended ?? 0}`,
     `可考虑 ${coverage.potential ?? 0}`,
     `待核验 ${coverage.review ?? 0}`,
+    coverage["not-recommended"] ? `不建议 ${coverage["not-recommended"]}` : "",
     coverage.excluded ? `按排除条件隐藏 ${coverage.excluded}` : "",
   ].filter(Boolean).join(" · ");
   summaryElement.textContent = [
@@ -67,6 +68,7 @@ function renderResults(output) {
       recommended: "推荐投递",
       potential: "可考虑",
       review: "待核验",
+      "not-recommended": "不建议",
     }[entry.tier] ?? "待核验";
     const tierElement = card.querySelector(".match-tier");
     tierElement.textContent = tier;

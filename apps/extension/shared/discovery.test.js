@@ -91,6 +91,23 @@ test("discovery exposes low-confidence campus leads for review", async () => {
   assert.match(output.results[0].reasons.join(" "), /校招/);
 });
 
+test("discovery separates known hard-requirement mismatches from review leads", async () => {
+  const provider = {
+    id: "fixture",
+    name: "合成岗位源",
+    search: async () => ({ jobs: [{ id: "senior", title: "数据分析专家", company: "测试机构", location: "上海" }] }),
+    detail: async (job) => ({
+      ...job,
+      sourceUrl: "https://example.com/senior",
+      sourcePlatform: "合成岗位源",
+      description: "面向2027届，但要求5年以上全职相关经验，熟悉 Python、SQL 和数据分析。",
+    }),
+  };
+  const output = await discoverJobs({ profile, instructions: { queries: "数据分析" }, providers: [provider] });
+  assert.equal(output.results[0].tier, "not-recommended");
+  assert.equal(output.coverage["not-recommended"], 1);
+});
+
 test("batch providers receive the full WeChat search context once", async () => {
   const calls = [];
   const provider = {

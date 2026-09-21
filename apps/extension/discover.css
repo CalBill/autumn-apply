@@ -50,9 +50,11 @@ button, .secondary { border: 0; border-radius: 9px; padding: 0.7rem 0.9rem; curs
 .match-tier.tier-recommended { color: #0d5c37; background: #cfead8; }
 .match-tier.tier-potential { color: #785c14; background: #f7e7ae; }
 .match-tier.tier-review { color: #76421e; background: #f6d8c4; }
+.match-tier.tier-not-recommended { color: #7a3030; background: #f3d2d2; }
 .job-card.tier-recommended { border-color: #a9d5b8; }
 .job-card.tier-potential { border-color: #e3d093; }
 .job-card.tier-review { border-color: #e4bea4; }
+.job-card.tier-not-recommended { border-color: #e4b5b5; }
 .title { margin: 0; font-size: 1.1rem; }
 .meta { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.78rem; }
 .score { flex: 0 0 58px; display: grid; place-items: center; height: 58px; border: 5px solid #dce9df; border-radius: 50%; }
