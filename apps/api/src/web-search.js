@@ -159,7 +159,18 @@ function buildZhipuQueries(query) {
 }
 
 function zhipuResultUrl(result) {
-  return String(result?.link ?? result?.url ?? result?.web_url ?? result?.refer ?? result?.source_url ?? "").trim();
+  return String(result?.source_url ?? result?.link ?? result?.url ?? result?.web_url ?? result?.refer ?? "").trim();
+}
+
+function zhipuResultUrls(result) {
+  // `web-search-pro` currently puts the source identifier in `refer` (for
+  // example `ref_1`), while its result excerpt often contains the actual
+  // official application link. Keep supporting documented URL fields, then
+  // recover every HTTPS link explicitly present in that excerpt.
+  const inlineUrls = String(result?.content ?? result?.snippet ?? "").match(/https:\/\/[^\s<>"'）】]+/g) ?? [];
+  return unique([zhipuResultUrl(result), ...inlineUrls]
+    .map((value) => value.replace(/[，。；、]+$/, ""))
+    .filter((value) => value.startsWith("https://")));
 }
 
 function collectZhipuSearchResults(raw) {
@@ -172,8 +183,7 @@ function collectZhipuSearchResults(raw) {
     }
     if (key === "search_result" || key === "search_results") {
       // GLM's current web-search-pro response uses `refer`; older examples use `link`.
-      const url = zhipuResultUrl(value);
-      if (url.startsWith("https://")) results.push(value);
+      zhipuResultUrls(value).forEach((sourceUrl) => results.push({ ...value, source_url: sourceUrl }));
     }
     for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
   }

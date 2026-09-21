@@ -66,3 +66,23 @@ test("Zhipu web search keeps only returned links and applies local matching", as
   assert.deepEqual(queries, ["2027届 校园招聘 合规 上海 官方招聘 网申", "2027届 秋招 上海 合规 国企 央企 金融 官方招聘"]);
   assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, displayed: 1 });
 });
+
+test("Zhipu web search recovers official links embedded in current result excerpts", async () => {
+  const model = {
+    searchWeb: async () => ({ raw: {
+      choices: [{ message: { tool_calls: [{ search_result: [{
+        title: "某券商 2027 校园招聘", media_name: "某券商", refer: "ref_1",
+        content: "上海岗位，官方投递链接 https://example.com/campus/apply?job=2027。",
+      }] }] } }],
+    } }),
+  };
+  const result = await searchJobsWithAi({
+    profile: { education: [], experiences: [], projects: [], skills: [], qualifications: {}, preferences: { roles: ["金融"], locations: ["上海"], graduationYear: "2027", excludedKeywords: [] } },
+    instructions: { roles: ["金融"], locations: ["上海"], maximumResults: 5 },
+    model, provider: "zhipu", resolveHost: publicDns,
+    fetchImpl: async () => new Response("某券商 2027 校园招聘", { status: 200, headers: { "Content-Type": "text/html" } }),
+  });
+  assert.equal(result.opportunities.length, 1);
+  assert.equal(result.opportunities[0].sourceUrl, "https://example.com/campus/apply?job=2027");
+  assert.deepEqual(result.searchStats, { provider: "zhipu", queries: 2, returned: 2, candidates: 1, displayed: 1 });
+});
