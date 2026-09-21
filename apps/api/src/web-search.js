@@ -144,6 +144,10 @@ function buildZhipuQueries(query) {
   return unique([...roleQueries, broadQuery]).slice(0, 4);
 }
 
+function zhipuResultUrl(result) {
+  return String(result?.link ?? result?.url ?? result?.web_url ?? result?.refer ?? result?.source_url ?? "").trim();
+}
+
 function collectZhipuSearchResults(raw) {
   const results = [];
   function visit(value, key = "") {
@@ -153,7 +157,8 @@ function collectZhipuSearchResults(raw) {
       return;
     }
     if (key === "search_result" || key === "search_results") {
-      const url = String(value.link ?? value.url ?? value.web_url ?? "").trim();
+      // GLM's current web-search-pro response uses `refer`; older examples use `link`.
+      const url = zhipuResultUrl(value);
       if (url.startsWith("https://")) results.push(value);
     }
     for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
@@ -184,13 +189,14 @@ function companyFromSearchResult(result, sourceUrl) {
 async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHost }) {
   if (typeof model?.searchWeb !== "function") throw Object.assign(new Error("智谱 GLM 联网搜索组件不可用，请重新启动本机服务"), { statusCode: 503 });
   const rawResults = [];
-  for (const searchQuery of buildZhipuQueries(query)) {
+  const searchQueries = buildZhipuQueries(query);
+  for (const searchQuery of searchQueries) {
     const response = await model.searchWeb(`请检索并返回与以下条件相关的公开招聘网页和招聘公告：${searchQuery}。优先企业官网、官方招聘系统和高校就业网；排除销售、外包、社招和要求两年以上全职经验的职位。`);
     rawResults.push(...collectZhipuSearchResults(response.raw));
   }
   const seen = new Set();
   const candidates = rawResults.filter((result) => {
-    const sourceUrl = String(result.link ?? result.url ?? result.web_url ?? "").trim();
+    const sourceUrl = zhipuResultUrl(result);
     if (!sourceUrl || seen.has(sourceUrl)) return false;
     seen.add(sourceUrl);
     const text = `${result.title ?? ""} ${result.content ?? result.snippet ?? ""}`;
@@ -198,7 +204,7 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
   }).slice(0, query.maximumResults);
   const opportunities = [];
   for (const result of candidates) {
-    const sourceUrl = String(result.link ?? result.url ?? result.web_url).trim();
+    const sourceUrl = zhipuResultUrl(result);
     const title = String(result.title ?? "招聘线索").trim().slice(0, 300);
     const description = String(result.content ?? result.snippet ?? "").trim().slice(0, 8_000);
     const job = {
@@ -224,7 +230,13 @@ async function searchJobsWithZhipu({ profile, query, model, fetchImpl, resolveHo
       verification,
     });
   }
-  return { opportunities, citedSources: candidates.map((item) => String(item.link ?? item.url ?? item.web_url)), searchedAt: new Date().toISOString(), disclosedFields: Object.keys(profile) };
+  return {
+    opportunities,
+    citedSources: candidates.map(zhipuResultUrl),
+    searchStats: { provider: "zhipu", queries: searchQueries.length, returned: rawResults.length, candidates: candidates.length, displayed: opportunities.length },
+    searchedAt: new Date().toISOString(),
+    disclosedFields: Object.keys(profile),
+  };
 }
 
 export async function searchJobsWithAi({ profile, instructions = {}, model, provider, fetchImpl = fetch, resolveHost } = {}) {

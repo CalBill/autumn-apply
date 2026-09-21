@@ -44,7 +44,9 @@ function renderResults(output) {
   const sourceSummary = output.sourceStats.map((source) => {
     const querySummary = source.plannedQueries
       ? `（完成 ${source.searchedQueries}/${source.plannedQueries} 组查询）`
-      : "";
+      : Number.isFinite(source.returned)
+        ? `（返回 ${source.returned} 条，筛选 ${source.candidates ?? source.fetched} 条）`
+        : "";
     return `${source.name}读取 ${source.fetched} 条${querySummary}`;
   }).join("；");
   const tiers = [
@@ -282,7 +284,10 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
     });
     const aiDiscovery = createAiDiscoveryOutput(output, instructions);
     await persistDiscovery(mergeDiscoveryOutputs(discovery, aiDiscovery));
-    statusElement.textContent = `AI补充搜索完成；核验 ${output.opportunities.length} 条来源`;
+    const stats = output.searchStats;
+    statusElement.textContent = stats?.provider === "zhipu"
+      ? `GLM 联网检索返回 ${stats.returned} 条，去重和条件过滤后展示 ${stats.displayed} 条；每条仍需核验来源。`
+      : `AI补充搜索完成；核验 ${output.opportunities.length} 条来源`;
   } catch (error) {
     errorsElement.classList.remove("hidden");
     errorsElement.textContent = `AI联网搜索失败：${error.message}`;

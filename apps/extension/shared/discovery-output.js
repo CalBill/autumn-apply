@@ -34,7 +34,13 @@ export function createAiDiscoveryOutput(output, instructions) {
         },
       };
     }),
-    sourceStats: [{ id: "ai-web-search", name: "AI联网搜索", fetched: output.opportunities?.length ?? 0 }],
+    sourceStats: [{
+      id: "ai-web-search",
+      name: output.searchStats?.provider === "zhipu" ? "AI联网搜索（智谱 GLM）" : "AI联网搜索",
+      fetched: output.opportunities?.length ?? 0,
+      returned: output.searchStats?.returned,
+      candidates: output.searchStats?.candidates,
+    }],
     errors: [],
     searchedAt: output.searchedAt,
   };
