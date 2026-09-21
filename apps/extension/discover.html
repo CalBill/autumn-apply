@@ -18,7 +18,7 @@
           <div class="source"><span></span><div><strong>多来源机会发现</strong><p>企业官网招聘系统 + 微信公众号招聘文章</p></div></div>
           <label>搜索岗位<input name="queries" placeholder="数据分析、商业分析" /><small>留空时使用资料库中的目标岗位，最多三个方向。</small></label>
           <label>工作地点<input name="locations" placeholder="上海、深圳" /></label>
-          <label>公众号重点词<input name="wechatKeywords" placeholder="国资小新、中石油招聘、航运" /><small>可填写重点公司、公众号或行业词；系统会与届别组合搜索，并把总请求数限制在六次。</small></label>
+          <label>公众号重点词<input name="wechatKeywords" placeholder="国资小新、中石油招聘、航运" /><small>可填写重点公司、公众号或行业词；系统会组合届别、校园招聘与秋招词，低频顺序执行，最多十次。</small></label>
           <label>要求必须包含<input name="requiredKeywords" placeholder="实习、Python" /><small>详情中必须同时包含这些词。</small></label>
           <label>排除关键词<input name="excludedKeywords" placeholder="高级、负责人、外包" /></label>
           <label>额外企业官网来源<textarea name="companySources" rows="5" placeholder="公司名 | https://官方招聘入口"></textarea><small>每行一个。支持 Moka、飞书招聘、Greenhouse、Lever、Ashby；必须填写公司官网实际跳转到的招聘入口。</small></label>
@@ -52,7 +52,7 @@
     <template id="result-template">
       <article class="job-card panel">
         <div class="job-main">
-          <div><span class="source-kind"></span><p class="company"></p><h2 class="title"></h2><p class="meta"></p></div>
+          <div><span class="match-tier"></span><span class="source-kind"></span><p class="company"></p><h2 class="title"></h2><p class="meta"></p></div>
           <div class="score"><strong></strong><span>匹配</span></div>
         </div>
         <div class="signals"><div><strong>优势</strong><ul class="strengths"></ul></div><div><strong>注意</strong><ul class="gaps"></ul></div></div>

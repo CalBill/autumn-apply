@@ -16,6 +16,14 @@ const LOCATION_NAMES = [
   "北京", "上海", "天津", "重庆", "深圳", "广州", "杭州", "南京", "苏州", "成都", "武汉", "西安", "长沙",
   "合肥", "厦门", "福州", "青岛", "济南", "郑州", "宁波", "无锡", "东莞", "佛山", "珠海", "香港", "澳门",
 ];
+const ROLE_ALIASES = {
+  金融: ["证券", "基金", "银行", "投融资", "资产管理"],
+  PEVC: ["PE", "VC", "私募股权", "创业投资"],
+  IBD: ["投行", "投资银行", "投融资"],
+  人力资源: ["人力", "HR", "组织发展"],
+  合规: ["风控", "内控", "法律合规"],
+  管培生: ["管理培训生", "管培"],
+};
 
 function attribute(tag, name) {
   const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
@@ -100,19 +108,31 @@ export function buildWechatSearchPlan({
   industries = [],
   companyTypes = [],
   focusKeywords = [],
-  maxRequests = 6,
+  maxRequests = 10,
 } = {}) {
   const roles = unique([...(Array.isArray(queries) ? queries : []), query]).slice(0, 3);
   const cohort = graduationYear ? `${graduationYear}届` : "应届生";
   const planned = [];
   for (const role of roles) planned.push(`${role} ${cohort} 校招`);
-  for (const keyword of unique(focusKeywords).slice(0, 2)) planned.push(`${keyword} ${cohort} 招聘`);
+  for (const keyword of unique(focusKeywords).slice(0, 3)) {
+    planned.push(`${keyword} ${cohort} 招聘`);
+    planned.push(`${keyword} 校招`);
+  }
+  for (const role of roles) {
+    planned.push(`${role} 校园招聘`);
+    planned.push(`${role} 秋招`);
+  }
   for (let index = 0; index < Math.min(roles.length, locations.length); index += 1) {
     planned.push(`${locations[index]} ${roles[index]} ${cohort} 招聘`);
   }
+  const aliases = unique(roles.flatMap((role) => ROLE_ALIASES[role.toUpperCase()] ?? ROLE_ALIASES[role] ?? [])).slice(0, 3);
+  for (const alias of aliases) planned.push(`${alias} ${cohort} 校招`);
   const preferenceTerms = unique([...companyTypes, ...industries]).slice(0, 2);
   if (preferenceTerms.length) planned.push(`${preferenceTerms.join(" ")} ${cohort} 校招`);
-  return unique(planned).slice(0, Math.min(6, Math.max(1, Number(maxRequests) || 6)));
+  // A cohort may not yet have many exact hits. Generic campus-recruitment
+  // queries make WeChat discovery useful instead of returning an opaque zero.
+  planned.push(`${cohort} 秋招`);
+  return unique(planned).slice(0, Math.min(10, Math.max(1, Number(maxRequests) || 10)));
 }
 
 export function isRecruitmentArticle(title, abstract) {
@@ -228,8 +248,9 @@ export async function searchWechatArticles(input, fetchImpl = fetch) {
       searchedQueries.push(recruitmentQuery);
       for (const job of jobs) articles.set(job.id, mergeArticle(articles.get(job.id), job));
     } catch (error) {
-      if (!articles.size) throw error;
       warnings.push(`${recruitmentQuery}：${error.message}`);
+      // Do not retry or try to bypass anti-bot checks. Surface the source
+      // limitation, preserve any earlier leads, and stop this low-frequency run.
       break;
     }
   }

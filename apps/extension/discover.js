@@ -34,21 +34,43 @@ function list(element, items, emptyText) {
 function renderResults(output) {
   resultsElement.replaceChildren();
   emptyElement.classList.toggle("hidden", output.results.length > 0);
-  emptyElement.textContent = output.results.length ? "" : "没有岗位同时满足当前地点、关键词和分数条件。可以适当放宽条件重试。";
-  titleElement.textContent = `找到 ${output.results.length} 个候选岗位`;
-  summaryElement.textContent = output.sourceStats.map((source) => {
+  const coverage = output.coverage ?? {};
+  emptyElement.textContent = output.results.length
+    ? ""
+    : `本次没有可展示的岗位。已读取 ${coverage.fetched ?? 0} 条来源数据；请查看下方来源状态或调整搜索词。`;
+  titleElement.textContent = `机会池中展示 ${output.results.length} 个岗位`;
+  const sourceSummary = output.sourceStats.map((source) => {
     const querySummary = source.plannedQueries
       ? `（完成 ${source.searchedQueries}/${source.plannedQueries} 组查询）`
       : "";
     return `${source.name}读取 ${source.fetched} 条${querySummary}`;
   }).join("；");
+  const tiers = [
+    `推荐 ${coverage.recommended ?? 0}`,
+    `可考虑 ${coverage.potential ?? 0}`,
+    `待核验 ${coverage.review ?? 0}`,
+    coverage.excluded ? `按排除条件隐藏 ${coverage.excluded}` : "",
+  ].filter(Boolean).join(" · ");
+  summaryElement.textContent = [
+    sourceSummary,
+    `机会池：读取 ${coverage.fetched ?? 0} 条，评估 ${coverage.considered ?? 0} 条，${tiers}`,
+  ].filter(Boolean).join("。 ");
   errorsElement.classList.toggle("hidden", output.errors.length === 0);
   errorsElement.textContent = output.errors.length ? `部分结果不完整：${output.errors.join("；")}` : "";
 
   for (const entry of output.results) {
     const card = document.querySelector("#result-template").content.firstElementChild.cloneNode(true);
+    card.classList.add(`tier-${entry.tier ?? "review"}`);
     card.querySelector(".company").textContent = entry.job.company;
     card.querySelector(".title").textContent = entry.job.title;
+    const tier = {
+      recommended: "推荐投递",
+      potential: "可考虑",
+      review: "待核验",
+    }[entry.tier] ?? "待核验";
+    const tierElement = card.querySelector(".match-tier");
+    tierElement.textContent = tier;
+    tierElement.classList.add(`tier-${entry.tier ?? "review"}`);
     const wechatType = {
       "company-announcement": "单企业公告",
       roundup: "岗位汇总",
@@ -65,7 +87,7 @@ function renderResults(output) {
       entry.job.sourcePlatform,
     ].filter(Boolean).join(" · ");
     card.querySelector(".score strong").textContent = entry.assessment.score;
-    list(card.querySelector(".strengths"), entry.assessment.strengths.slice(0, 3), "暂未发现明确优势");
+    list(card.querySelector(".strengths"), [...(entry.reasons ?? []), ...entry.assessment.strengths].slice(0, 3), "暂未发现明确优势");
     list(card.querySelector(".gaps"), [...entry.assessment.gaps, ...entry.assessment.warnings].slice(0, 3), "没有明显提醒");
     const sourceKind = card.querySelector(".source-kind");
     sourceKind.textContent = entry.job.sourceType === "wechat-article"
