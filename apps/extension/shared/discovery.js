@@ -26,7 +26,7 @@ export function normalizeDiscoveryInstructions(input = {}, profile) {
       ? splitList(input.excludedKeywords)
       : profile.preferences.excludedKeywords ?? [],
     minimumScore: Math.min(100, Math.max(0, Number(input.minimumScore) || profile.preferences.minimumScore || 60)),
-    maxResults: Math.min(30, Math.max(1, Number(input.maxResults) || 15)),
+    maxResults: Math.min(50, Math.max(1, Number(input.maxResults) || 15)),
     recentDays: Math.min(365, Math.max(1, Number(input.recentDays) || 90)),
   };
 }
@@ -36,25 +36,52 @@ function containsAny(text, values) {
   return values.some((value) => normalized.includes(normalize(value)));
 }
 
-function passesSummaryFilter(job, instructions) {
-  const text = `${job.title} ${job.company} ${job.location}`;
-  // Unknown locations remain visible with a warning instead of being silently
-  // discarded. Recruitment announcements often omit the city in the excerpt.
-  if (instructions.locations.length && job.location && !containsAny(job.location, instructions.locations)) return false;
-  if (instructions.excludedKeywords.length && containsAny(text, instructions.excludedKeywords)) return false;
-  if (job.publishedAt) {
-    const published = Date.parse(`${job.publishedAt}T00:00:00+08:00`);
-    if (Number.isFinite(published) && Date.now() - published > instructions.recentDays * 86_400_000) return false;
-  }
-  return true;
+const CAMPUS_SIGNALS = ["校招", "校园招聘", "应届", "毕业生", "届", "管培生"];
+
+function candidateText(job) {
+  return `${job.title} ${job.company} ${job.location} ${job.description}`;
 }
 
-function passesDetailFilter(job, instructions) {
-  const text = `${job.title} ${job.company} ${job.location} ${job.description}`;
-  if (instructions.campusOnly && !containsAny(text, ["校招", "校园招聘", "应届", "毕业生", "届", "管培生"])) return false;
-  if (instructions.requiredKeywords.length && !instructions.requiredKeywords.every((keyword) => containsAny(text, [keyword]))) return false;
-  if (instructions.excludedKeywords.length && containsAny(text, instructions.excludedKeywords)) return false;
-  return true;
+function isOlderThanRequestedWindow(job, recentDays) {
+  if (!job.publishedAt) return false;
+  const published = Date.parse(`${job.publishedAt}T00:00:00+08:00`);
+  return Number.isFinite(published) && Date.now() - published > recentDays * 86_400_000;
+}
+
+function classifyCandidate(job, assessment, instructions) {
+  const text = candidateText(job);
+  const reasons = [];
+  const excludedBy = instructions.excludedKeywords.filter((keyword) => containsAny(text, [keyword]));
+  if (excludedBy.length) return { tier: "excluded", reasons: [`命中排除条件：${excludedBy.join("、")}`] };
+  if (!assessment.hardRequirementsMet) {
+    return { tier: "not-recommended", reasons: ["已识别到不满足的硬性条件", ...assessment.gaps.slice(0, 2)] };
+  }
+
+  const locationMismatch = instructions.locations.length && job.location
+    && !containsAny(job.location, instructions.locations);
+  const campusSignal = containsAny(text, CAMPUS_SIGNALS);
+  const missingRequired = instructions.requiredKeywords.filter((keyword) => !containsAny(text, [keyword]));
+  const sparseDescription = job.description.length < 80;
+  const oldPosting = isOlderThanRequestedWindow(job, instructions.recentDays);
+
+  if (locationMismatch) reasons.push(`地点“${job.location}”不在目标城市中`);
+  if (instructions.campusOnly && !campusSignal) reasons.push("摘要未能确认校招/应届条件");
+  if (missingRequired.length) reasons.push(`摘要未确认必备条件：${missingRequired.join("、")}`);
+  if (oldPosting) reasons.push(`发布时间可能早于最近 ${instructions.recentDays} 天`);
+  if (sparseDescription) reasons.push("岗位详情较短，建议打开原始页面核验");
+
+  if (assessment.hardRequirementsMet
+    && assessment.score >= instructions.minimumScore
+    && !locationMismatch
+    && (!instructions.campusOnly || campusSignal)
+    && missingRequired.length === 0
+    && !oldPosting) {
+    return { tier: "recommended", reasons: ["与当前偏好和已识别要求匹配"] };
+  }
+  if (sparseDescription || (instructions.campusOnly && !campusSignal) || missingRequired.length || oldPosting) {
+    return { tier: "review", reasons };
+  }
+  return { tier: "potential", reasons: reasons.length ? reasons : ["与目标方向存在部分匹配，建议人工判断"] };
 }
 
 async function mapWithConcurrency(items, limit, mapper) {
@@ -156,6 +183,7 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
         fetched,
         searchedQueries: output.searchedQueries?.length ?? 0,
         plannedQueries: output.searchPlan?.length ?? 0,
+        manualSearchUrls: output.manualSearchUrls ?? [],
       });
     } catch (error) {
       errors.push(`${provider.name}：${error.message}`);
@@ -163,10 +191,12 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
     }
   }
 
-  const candidateLimit = Math.min(40, Math.max(instructions.maxResults * 2, 15));
+  // Discovery must build a broad opportunity pool before ranking.  A strict
+  // match score is a recommendation signal, never a reason to erase every
+  // result the user could otherwise inspect.
+  const candidateLimit = Math.min(100, Math.max(instructions.maxResults * 4, 40));
   const deduplicated = selectFairCandidates(
-    [...new Map(summaries.map((job) => [job.id, job])).values()]
-      .filter((job) => passesSummaryFilter(job, instructions)),
+    [...new Map(summaries.map((job) => [job.id, job])).values()],
     candidateLimit,
   );
 
@@ -176,27 +206,43 @@ export async function discoverJobs({ profile, instructions: rawInstructions, pro
       return await job.provider.detail(job);
     } catch (error) {
       errors.push(`${job.provider.name} · ${job.title}：${error.message}`);
-      return null;
+      // A detail endpoint failure should not make a discoverable opportunity
+      // disappear. Keep its list-page excerpt and make the uncertainty clear.
+      return {
+        ...job,
+        metadata: { ...(job.metadata ?? {}), detailUnavailable: true },
+      };
     }
   });
 
-  const results = detailed
-    .filter(Boolean)
-    .filter((job) => passesDetailFilter(job, instructions))
-    .map((job) => ({ job, assessment: analyzeJob(job, profile) }))
-    .filter(({ job, assessment }) => {
-      if (job.sourceType !== "wechat-article") return assessment.score >= instructions.minimumScore;
-      const quality = Number(job.metadata?.qualityScore) || 0;
-      return quality >= 55 && assessment.score >= Math.min(50, instructions.minimumScore);
-    })
-    .sort((a, b) => b.assessment.score - a.assessment.score)
-    .slice(0, instructions.maxResults);
+  const tiers = { recommended: 0, potential: 0, review: 0, "not-recommended": 0, excluded: 0 };
+  const candidates = detailed.filter(Boolean).map((job) => {
+    const assessment = analyzeJob(job, profile);
+    const classification = classifyCandidate(job, assessment, instructions);
+    tiers[classification.tier] += 1;
+    return { job, assessment, ...classification };
+  });
+  const tierOrder = { recommended: 0, potential: 1, review: 2, "not-recommended": 3, excluded: 4 };
+  const allResults = candidates
+    .filter((entry) => entry.tier !== "excluded")
+    .sort((a, b) => tierOrder[a.tier] - tierOrder[b.tier]
+      || b.assessment.score - a.assessment.score
+      || String(b.job.publishedAt ?? "").localeCompare(String(a.job.publishedAt ?? "")));
+  const results = allResults.slice(0, instructions.maxResults);
 
   return {
     instructions,
     results,
+    allResults,
     sourceStats,
     errors,
+    coverage: {
+      fetched: summaries.length,
+      considered: deduplicated.length,
+      displayed: results.length,
+      available: allResults.length,
+      ...tiers,
+    },
     searchedAt: new Date().toISOString(),
   };
 }

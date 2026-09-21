@@ -244,8 +244,21 @@ renderApplications(await loadApplications());
 const localApiStatus = document.querySelector("#local-api-status");
 const providerForm = document.querySelector("#provider-form");
 const providerStatus = document.querySelector("#provider-status");
+const providerHelp = document.querySelector("#provider-help");
 const aiStructureButton = document.querySelector("#ai-structure-resume");
 let parsedResumeText = "";
+
+const PROVIDER_DEFAULTS = {
+  openai: { model: "gpt-5.6-luna", help: "OpenAI：点击“AI联网补充搜索”时使用托管网页搜索。" },
+  deepseek: { model: "deepseek-flash", help: "DeepSeek：可用于简历结构化和岗位匹配；不提供内建联网搜索。" },
+  zhipu: { model: "glm-4-flash", help: "智谱 GLM：联网搜索会自动使用官方 web-search-pro；此处模型用于结构化和匹配。" },
+};
+
+function renderProviderHelp(provider, resetModel = false) {
+  const current = PROVIDER_DEFAULTS[provider] ?? PROVIDER_DEFAULTS.openai;
+  providerHelp.textContent = current.help;
+  if (resetModel) providerForm.elements.model.value = current.model;
+}
 
 function showIntegrationStatus(element, message, kind = "") {
   element.textContent = message;
@@ -256,6 +269,7 @@ async function refreshProviderSettings() {
   const settings = await getProviderSettings();
   providerForm.elements.provider.value = settings.provider;
   providerForm.elements.model.value = settings.model;
+  renderProviderHelp(settings.provider);
   const keySource = {
     environment: "环境变量",
     keychain: "macOS 钥匙串",
@@ -352,6 +366,10 @@ providerForm.addEventListener("submit", async (event) => {
   } catch (error) {
     showIntegrationStatus(providerStatus, error.message, "error");
   }
+});
+
+providerForm.elements.provider.addEventListener("change", (event) => {
+  renderProviderHelp(event.currentTarget.value, true);
 });
 
 document.querySelector("#delete-provider-key").addEventListener("click", async () => {

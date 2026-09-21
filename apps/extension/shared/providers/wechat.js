@@ -16,6 +16,23 @@ const LOCATION_NAMES = [
   "北京", "上海", "天津", "重庆", "深圳", "广州", "杭州", "南京", "苏州", "成都", "武汉", "西安", "长沙",
   "合肥", "厦门", "福州", "青岛", "济南", "郑州", "宁波", "无锡", "东莞", "佛山", "珠海", "香港", "澳门",
 ];
+const ROLE_ALIASES = {
+  金融: ["证券", "基金", "银行", "投融资", "资产管理"],
+  PEVC: ["PE", "VC", "私募股权", "创业投资"],
+  IBD: ["投行", "投资银行", "投融资"],
+  人力资源: ["人力", "HR", "组织发展"],
+  合规: ["风控", "内控", "法律合规"],
+  管培生: ["管理培训生", "管培"],
+};
+const PREFERENCE_CHANNEL_TERMS = {
+  金融: ["银行招聘", "证券招聘", "基金招聘", "金融招聘"],
+  国央企: ["国资小新", "央企招聘", "国企招聘"],
+  央企: ["国资小新", "央企招聘"],
+  国企: ["国资小新", "国企招聘"],
+  航运: ["航运招聘", "船员招聘"],
+  石油: ["石油招聘", "能源招聘"],
+  海油: ["海油招聘", "能源招聘"],
+};
 
 function attribute(tag, name) {
   const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
@@ -92,6 +109,19 @@ function searchUrl(query) {
   return `${SEARCH_URL}?${params}`;
 }
 
+export function createWechatSearchUrl(query) {
+  return searchUrl(query);
+}
+
+function preferenceChannelTerms({ industries = [], companyTypes = [] } = {}) {
+  return unique([...companyTypes, ...industries].flatMap((value) => [
+    ...(PREFERENCE_CHANNEL_TERMS[value] ?? []),
+    ...Object.entries(PREFERENCE_CHANNEL_TERMS)
+      .filter(([key]) => String(value).includes(key))
+      .flatMap(([, terms]) => terms),
+  ]));
+}
+
 export function buildWechatSearchPlan({
   query = "",
   queries = [],
@@ -100,19 +130,32 @@ export function buildWechatSearchPlan({
   industries = [],
   companyTypes = [],
   focusKeywords = [],
-  maxRequests = 6,
+  maxRequests = 10,
 } = {}) {
   const roles = unique([...(Array.isArray(queries) ? queries : []), query]).slice(0, 3);
   const cohort = graduationYear ? `${graduationYear}届` : "应届生";
   const planned = [];
   for (const role of roles) planned.push(`${role} ${cohort} 校招`);
-  for (const keyword of unique(focusKeywords).slice(0, 2)) planned.push(`${keyword} ${cohort} 招聘`);
+  const channelTerms = unique([...focusKeywords, ...preferenceChannelTerms({ industries, companyTypes })]);
+  for (const keyword of channelTerms.slice(0, 4)) {
+    planned.push(`${keyword} ${cohort} 招聘`);
+    planned.push(`${keyword} 校招`);
+  }
+  for (const role of roles) {
+    planned.push(`${role} 校园招聘`);
+    planned.push(`${role} 秋招`);
+  }
   for (let index = 0; index < Math.min(roles.length, locations.length); index += 1) {
     planned.push(`${locations[index]} ${roles[index]} ${cohort} 招聘`);
   }
+  const aliases = unique(roles.flatMap((role) => ROLE_ALIASES[role.toUpperCase()] ?? ROLE_ALIASES[role] ?? [])).slice(0, 3);
+  for (const alias of aliases) planned.push(`${alias} ${cohort} 校招`);
   const preferenceTerms = unique([...companyTypes, ...industries]).slice(0, 2);
   if (preferenceTerms.length) planned.push(`${preferenceTerms.join(" ")} ${cohort} 校招`);
-  return unique(planned).slice(0, Math.min(6, Math.max(1, Number(maxRequests) || 6)));
+  // A cohort may not yet have many exact hits. Generic campus-recruitment
+  // queries make WeChat discovery useful instead of returning an opaque zero.
+  planned.push(`${cohort} 秋招`);
+  return unique(planned).slice(0, Math.min(10, Math.max(1, Number(maxRequests) || 10)));
 }
 
 export function isRecruitmentArticle(title, abstract) {
@@ -215,7 +258,7 @@ function mergeArticle(current, incoming) {
   return { ...preferred, metadata: { ...preferred.metadata, matchedQueries, seenAccounts } };
 }
 
-export async function searchWechatArticles(input, fetchImpl = fetch) {
+export async function searchWechatArticles(input, fetchImpl = fetch, importedArticles = []) {
   const page = Math.max(1, Number(input.page) || 1);
   const pageSize = Math.min(60, Math.max(1, Number(input.pageSize) || 20));
   const searchPlan = buildWechatSearchPlan(input);
@@ -228,26 +271,39 @@ export async function searchWechatArticles(input, fetchImpl = fetch) {
       searchedQueries.push(recruitmentQuery);
       for (const job of jobs) articles.set(job.id, mergeArticle(articles.get(job.id), job));
     } catch (error) {
-      if (!articles.size) throw error;
       warnings.push(`${recruitmentQuery}：${error.message}`);
+      // Do not retry or try to bypass anti-bot checks. Surface the source
+      // limitation, preserve any earlier leads, and stop this low-frequency run.
       break;
     }
+  }
+  for (const article of importedArticles) {
+    if (!article?.id || article.sourceType !== "wechat-article") continue;
+    articles.set(article.id, mergeArticle(articles.get(article.id), article));
   }
   const jobs = [...articles.values()].sort((a, b) => {
     const quality = (b.metadata?.qualityScore ?? 0) - (a.metadata?.qualityScore ?? 0);
     if (quality) return quality;
     return String(b.publishedAt ?? "").localeCompare(String(a.publishedAt ?? ""));
   }).slice(0, pageSize);
-  return { jobs, total: jobs.length, page, searchPlan, searchedQueries, warnings };
+  return {
+    jobs,
+    total: jobs.length,
+    page,
+    searchPlan,
+    searchedQueries,
+    warnings,
+    manualSearchUrls: searchPlan.map((query) => ({ query, url: searchUrl(query) })),
+  };
 }
 
-export function createWechatProvider(fetchImpl = fetch) {
+export function createWechatProvider(fetchImpl = fetch, importedArticles = []) {
   return {
     id: "wechat-sogou",
     name: "微信公众号",
     kind: "wechat-article",
     batchSearch: true,
-    search: (input) => searchWechatArticles(input, fetchImpl),
+    search: (input) => searchWechatArticles(input, fetchImpl, importedArticles),
     detail: async (article) => article,
   };
 }

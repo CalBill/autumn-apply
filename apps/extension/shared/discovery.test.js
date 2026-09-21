@@ -32,7 +32,7 @@ test("discovery inherits durable candidate filters", () => {
   assert.equal(instructions.campusOnly, true);
 });
 
-test("discovery filters, enriches and ranks real job shapes", async () => {
+test("discovery keeps potential opportunities instead of silently filtering them away", async () => {
   const provider = {
     id: "fixture",
     name: "合成岗位源",
@@ -58,9 +58,69 @@ test("discovery filters, enriches and ranks real job shapes", async () => {
     providers: [provider],
   });
 
-  assert.equal(output.results.length, 1);
+  assert.equal(output.results.length, 2);
   assert.equal(output.results[0].job.id, "1");
   assert.ok(output.results[0].assessment.score >= 80);
+  assert.equal(output.results[0].tier, "recommended");
+  assert.equal(output.results[1].job.id, "3");
+  assert.equal(output.results[1].tier, "review");
+  assert.equal(output.coverage.excluded, 1);
+  assert.equal(output.allResults.length, 2);
+});
+
+test("discovery retains a ranked pool beyond the first displayed batch", async () => {
+  const provider = {
+    id: "fixture", name: "合成岗位源",
+    search: async () => ({ jobs: Array.from({ length: 5 }, (_, index) => ({
+      id: `job-${index}`, providerId: `job-${index}`, title: "数据分析校招", company: `公司${index}`, location: "上海",
+    })) }),
+    detail: async (job) => ({ ...job, sourceUrl: `https://example.com/${job.id}`, sourcePlatform: "合成岗位源", description: "2027届校园招聘，本科及以上，要求 Python、SQL 和数据分析。" }),
+  };
+  const output = await discoverJobs({ profile, instructions: { queries: "数据分析", maxResults: 2 }, providers: [provider] });
+  assert.equal(output.results.length, 2);
+  assert.equal(output.allResults.length, 5);
+  assert.equal(output.coverage.available, 5);
+});
+
+test("discovery exposes low-confidence campus leads for review", async () => {
+  const provider = {
+    id: "fixture",
+    name: "合成岗位源",
+    search: async () => ({
+      jobs: [{ id: "lead", providerId: "lead", title: "投资研究岗位", company: "测试机构", location: "上海" }],
+    }),
+    detail: async (job) => ({
+      ...job,
+      sourceUrl: "https://example.com/lead",
+      sourcePlatform: "合成岗位源",
+      description: "岗位详情请打开官网查看。",
+    }),
+  };
+  const output = await discoverJobs({
+    profile,
+    instructions: { queries: "数据分析", campusOnly: true, minimumScore: 90 },
+    providers: [provider],
+  });
+  assert.equal(output.results.length, 1);
+  assert.equal(output.results[0].tier, "review");
+  assert.match(output.results[0].reasons.join(" "), /校招/);
+});
+
+test("discovery separates known hard-requirement mismatches from review leads", async () => {
+  const provider = {
+    id: "fixture",
+    name: "合成岗位源",
+    search: async () => ({ jobs: [{ id: "senior", title: "数据分析专家", company: "测试机构", location: "上海" }] }),
+    detail: async (job) => ({
+      ...job,
+      sourceUrl: "https://example.com/senior",
+      sourcePlatform: "合成岗位源",
+      description: "面向2027届，但要求5年以上全职相关经验，熟悉 Python、SQL 和数据分析。",
+    }),
+  };
+  const output = await discoverJobs({ profile, instructions: { queries: "数据分析" }, providers: [provider] });
+  assert.equal(output.results[0].tier, "not-recommended");
+  assert.equal(output.coverage["not-recommended"], 1);
 });
 
 test("batch providers receive the full WeChat search context once", async () => {

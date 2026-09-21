@@ -1,6 +1,7 @@
 export const SEARCH_ALARM_NAME = "autumn-apply-job-monitor";
 
 export function normalizeSearchMonitor(input = {}) {
+  input = input && typeof input === "object" ? input : {};
   const intervalHours = [12, 24, 72].includes(Number(input.intervalHours)) ? Number(input.intervalHours) : 24;
   return {
     enabled: input.enabled === true,

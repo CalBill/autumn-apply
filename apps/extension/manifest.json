@@ -32,5 +32,12 @@
     "default_title": "AutumnApply",
     "default_popup": "popup.html"
   },
+  "content_scripts": [
+    {
+      "matches": ["https://weixin.sogou.com/weixin*"],
+      "js": ["wechat-page-importer.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "options_page": "options.html"
 }

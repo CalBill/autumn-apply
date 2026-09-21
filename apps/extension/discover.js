@@ -4,8 +4,9 @@ import { discoverJobs, normalizeDiscoveryInstructions } from "./shared/discovery
 import { createAiDiscoveryOutput, mergeDiscoveryOutputs } from "./shared/discovery-output.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders, parseCompanySourceText, serializeCompanySources } from "./shared/providers/sources.js";
+import { buildWechatSearchPlan, createWechatSearchUrl } from "./shared/providers/wechat.js";
 import { normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
-import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, loadSearchMonitor, saveApplications, saveCompanySources, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
+import { loadApplications, loadCompanySources, loadDiscovery, loadProfile, loadSearchMonitor, loadWechatImportedArticles, saveApplications, saveCompanySources, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
 import { analyzeJobWithAi, searchJobsWithAi } from "./shared/local-api.js";
 
 const form = document.querySelector("#search-form");
@@ -16,11 +17,33 @@ const statusElement = document.querySelector("#search-status");
 const errorsElement = document.querySelector("#errors");
 const titleElement = document.querySelector("#result-title");
 const summaryElement = document.querySelector("#result-summary");
+const batchNavigationElement = document.querySelector("#batch-navigation");
+const batchStatusElement = document.querySelector("#batch-status");
+const previousBatchButton = document.querySelector("#previous-batch");
+const nextBatchButton = document.querySelector("#next-batch");
 let profile = await loadProfile();
 let applications = await loadApplications();
 let discovery = await loadDiscovery();
 let companySources = await loadCompanySources();
 let searchMonitor = normalizeSearchMonitor(await loadSearchMonitor());
+let importedWechatArticles = await loadWechatImportedArticles();
+
+function availableResults(output) {
+  return output.allResults ?? output.results ?? [];
+}
+
+function pageDiscovery(output, requestedOffset = 0) {
+  const allResults = availableResults(output);
+  const pageSize = Math.max(1, Number(output.instructions?.maxResults) || 15);
+  const maximumOffset = Math.max(0, Math.floor(Math.max(0, allResults.length - 1) / pageSize) * pageSize);
+  const pageOffset = Math.min(maximumOffset, Math.max(0, Number(requestedOffset) || 0));
+  return {
+    ...output,
+    allResults,
+    results: allResults.slice(pageOffset, pageOffset + pageSize),
+    pageOffset,
+  };
+}
 
 function list(element, items, emptyText) {
   element.replaceChildren();
@@ -34,21 +57,77 @@ function list(element, items, emptyText) {
 function renderResults(output) {
   resultsElement.replaceChildren();
   emptyElement.classList.toggle("hidden", output.results.length > 0);
-  emptyElement.textContent = output.results.length ? "" : "没有岗位同时满足当前地点、关键词和分数条件。可以适当放宽条件重试。";
-  titleElement.textContent = `找到 ${output.results.length} 个候选岗位`;
-  summaryElement.textContent = output.sourceStats.map((source) => {
+  const coverage = output.coverage ?? {};
+  emptyElement.textContent = output.results.length
+    ? ""
+    : `本次没有可展示的岗位。已读取 ${coverage.fetched ?? 0} 条来源数据；请查看下方来源状态或调整搜索词。`;
+  const allResults = availableResults(output);
+  const pageSize = Math.max(1, Number(output.instructions?.maxResults) || 15);
+  const pageOffset = Math.min(Math.max(0, Number(output.pageOffset) || 0), Math.max(0, allResults.length - 1));
+  const first = output.results.length ? pageOffset + 1 : 0;
+  const last = pageOffset + output.results.length;
+  titleElement.textContent = allResults.length > pageSize
+    ? `机会池第 ${Math.floor(pageOffset / pageSize) + 1} 批：${first}–${last} / ${allResults.length} 个岗位`
+    : `机会池中展示 ${output.results.length} 个岗位`;
+  const sourceSummary = output.sourceStats.map((source) => {
     const querySummary = source.plannedQueries
       ? `（完成 ${source.searchedQueries}/${source.plannedQueries} 组查询）`
+      : Number.isFinite(source.returned)
+        ? `（返回 ${source.returned} 条，筛选 ${source.candidates ?? source.fetched} 条）`
       : "";
-    return `${source.name}读取 ${source.fetched} 条${querySummary}`;
+    const screened = source.rejected ? `，硬性过滤 ${source.rejected} 条` : "";
+    return `${source.name}读取 ${source.fetched} 条${querySummary}${screened}`;
   }).join("；");
+  const tiers = [
+    `推荐 ${coverage.recommended ?? 0}`,
+    `可考虑 ${coverage.potential ?? 0}`,
+    `待核验 ${coverage.review ?? 0}`,
+    coverage["not-recommended"] ? `不建议 ${coverage["not-recommended"]}` : "",
+    coverage.excluded ? `按排除条件隐藏 ${coverage.excluded}` : "",
+  ].filter(Boolean).join(" · ");
+  summaryElement.textContent = [
+    sourceSummary,
+    `机会池：读取 ${coverage.fetched ?? 0} 条，评估 ${coverage.considered ?? 0} 条，${tiers}`,
+  ].filter(Boolean).join("。 ");
+  const hasMultipleBatches = allResults.length > pageSize;
+  batchNavigationElement.classList.toggle("hidden", !hasMultipleBatches);
+  if (hasMultipleBatches) {
+    const pageNumber = Math.floor(pageOffset / pageSize) + 1;
+    const totalPages = Math.ceil(allResults.length / pageSize);
+    batchStatusElement.textContent = `第 ${pageNumber} / ${totalPages} 批 · 已读取 ${allResults.length} 个岗位`;
+    previousBatchButton.disabled = pageOffset === 0;
+    nextBatchButton.disabled = pageOffset + pageSize >= allResults.length;
+  }
+  errorsElement.replaceChildren();
   errorsElement.classList.toggle("hidden", output.errors.length === 0);
-  errorsElement.textContent = output.errors.length ? `部分结果不完整：${output.errors.join("；")}` : "";
+  if (output.errors.length) {
+    errorsElement.append(`部分结果不完整：${output.errors.join("；")}`);
+    const wechat = output.sourceStats.find((source) => source.id === "wechat-sogou");
+    const fallback = wechat?.manualSearchUrls?.[0];
+    if (fallback) {
+      const link = document.createElement("a");
+      link.href = fallback.url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = `在浏览器中继续搜公众号：${fallback.query}`;
+      errorsElement.append(document.createElement("br"), link);
+    }
+  }
 
   for (const entry of output.results) {
     const card = document.querySelector("#result-template").content.firstElementChild.cloneNode(true);
+    card.classList.add(`tier-${entry.tier ?? "review"}`);
     card.querySelector(".company").textContent = entry.job.company;
     card.querySelector(".title").textContent = entry.job.title;
+    const tier = {
+      recommended: "推荐投递",
+      potential: "可考虑",
+      review: "待核验",
+      "not-recommended": "不建议",
+    }[entry.tier] ?? "待核验";
+    const tierElement = card.querySelector(".match-tier");
+    tierElement.textContent = tier;
+    tierElement.classList.add(`tier-${entry.tier ?? "review"}`);
     const wechatType = {
       "company-announcement": "单企业公告",
       roundup: "岗位汇总",
@@ -65,7 +144,7 @@ function renderResults(output) {
       entry.job.sourcePlatform,
     ].filter(Boolean).join(" · ");
     card.querySelector(".score strong").textContent = entry.assessment.score;
-    list(card.querySelector(".strengths"), entry.assessment.strengths.slice(0, 3), "暂未发现明确优势");
+    list(card.querySelector(".strengths"), [...(entry.reasons ?? []), ...entry.assessment.strengths].slice(0, 3), "暂未发现明确优势");
     list(card.querySelector(".gaps"), [...entry.assessment.gaps, ...entry.assessment.warnings].slice(0, 3), "没有明显提醒");
     const sourceKind = card.querySelector(".source-kind");
     sourceKind.textContent = entry.job.sourceType === "wechat-article"
@@ -143,6 +222,18 @@ function readInstructions() {
   return Object.fromEntries(data.entries());
 }
 
+function currentWechatPlan() {
+  const instructions = normalizeDiscoveryInstructions(readInstructions(), profile);
+  return buildWechatSearchPlan({
+    queries: instructions.queries,
+    locations: instructions.locations,
+    industries: instructions.industries,
+    companyTypes: instructions.companyTypes,
+    focusKeywords: instructions.wechatKeywords,
+    graduationYear: profile.preferences.graduationYear,
+  });
+}
+
 async function saveMonitor(instructions, results) {
   searchMonitor = updateMonitorAfterSearch({
     ...searchMonitor,
@@ -161,8 +252,8 @@ async function saveMonitor(instructions, results) {
 }
 
 async function persistDiscovery(output) {
-  discovery = await saveDiscovery(output);
-  await saveMonitor(discovery.instructions, discovery.results);
+  discovery = await saveDiscovery(pageDiscovery(output, 0));
+  await saveMonitor(discovery.instructions, discovery.allResults ?? discovery.results);
   renderResults(discovery);
   return discovery;
 }
@@ -188,10 +279,11 @@ form.addEventListener("submit", async (event) => {
     const parsedSources = parseCompanySourceText(form.elements.companySources.value);
     if (parsedSources.errors.length) throw new Error(parsedSources.errors.join("；"));
     companySources = await saveCompanySources(parsedSources.sources);
+    importedWechatArticles = await loadWechatImportedArticles();
     const output = await discoverJobs({
       profile,
       instructions: readInstructions(),
-      providers: createDiscoveryProviders(fetch, companySources),
+      providers: createDiscoveryProviders(fetch, companySources, importedWechatArticles),
       onProgress: (message) => { statusElement.textContent = message; },
     });
     await persistDiscovery(output);
@@ -205,6 +297,16 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+document.querySelector("#wechat-browser-search").addEventListener("click", async () => {
+  const query = currentWechatPlan()[0];
+  if (!query) {
+    statusElement.textContent = "请先填写目标岗位或在资料库中设置目标方向。";
+    return;
+  }
+  await chrome.tabs.create({ url: createWechatSearchUrl(query) });
+  statusElement.textContent = `已在普通浏览器标签页打开“${query}”。如出现验证码，请由你完成；结果页会自动导入公开招聘线索。`;
+});
+
 document.querySelector("#ai-search-button").addEventListener("click", async (event) => {
   const aiButton = event.currentTarget;
   aiButton.disabled = true;
@@ -216,11 +318,15 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
       locations: instructions.locations,
       requiredKeywords: instructions.requiredKeywords,
       excludedKeywords: instructions.excludedKeywords,
-      maximumResults: Math.min(20, instructions.maxResults),
+      recentDays: instructions.recentDays,
+      maximumResults: Math.min(50, instructions.maxResults),
     });
     const aiDiscovery = createAiDiscoveryOutput(output, instructions);
     await persistDiscovery(mergeDiscoveryOutputs(discovery, aiDiscovery));
-    statusElement.textContent = `AI补充搜索完成；核验 ${output.opportunities.length} 条来源`;
+    const stats = output.searchStats;
+    statusElement.textContent = stats?.provider === "zhipu"
+      ? `GLM 联网检索返回 ${stats.returned} 条，已隐藏 ${stats.rejected ?? 0} 条明显不符项，展示 ${stats.displayed} 条；每条仍需核验来源。`
+      : `AI补充搜索完成；核验 ${output.opportunities.length} 条来源`;
   } catch (error) {
     errorsElement.classList.remove("hidden");
     errorsElement.textContent = `AI联网搜索失败：${error.message}`;
@@ -229,6 +335,18 @@ document.querySelector("#ai-search-button").addEventListener("click", async (eve
     aiButton.disabled = false;
   }
 });
+
+async function moveBatch(direction) {
+  if (!discovery?.results) return;
+  const pageSize = Math.max(1, Number(discovery.instructions?.maxResults) || 15);
+  const nextOffset = (Number(discovery.pageOffset) || 0) + direction * pageSize;
+  discovery = await saveDiscovery(pageDiscovery(discovery, nextOffset));
+  renderResults(discovery);
+  statusElement.textContent = `正在查看第 ${Math.floor(discovery.pageOffset / pageSize) + 1} 批；不会重新搜索，也不会覆盖投递记录。`;
+}
+
+previousBatchButton.addEventListener("click", () => moveBatch(-1));
+nextBatchButton.addEventListener("click", () => moveBatch(1));
 
 form.elements.companySources.value = serializeCompanySources(companySources);
 form.elements.monitorEnabled.checked = searchMonitor.enabled;
@@ -245,5 +363,8 @@ if (!profileHasUsefulData(profile)) {
 } else {
   const initial = discovery?.instructions ?? normalizeDiscoveryInstructions({}, profile);
   fillInstructions(initial);
-  if (discovery?.results) renderResults(discovery);
+  if (discovery?.results) {
+    discovery = pageDiscovery(discovery, discovery.pageOffset);
+    renderResults(discovery);
+  }
 }

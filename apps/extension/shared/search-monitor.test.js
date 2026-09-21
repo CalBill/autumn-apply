@@ -3,6 +3,15 @@ import test from "node:test";
 import { findUpcomingDeadlines, normalizeSearchMonitor, updateMonitorAfterSearch } from "./search-monitor.js";
 
 test("search monitor only accepts supported intervals", () => {
+  assert.deepEqual(normalizeSearchMonitor(null), {
+    enabled: false,
+    intervalHours: 24,
+    instructions: null,
+    seenJobIds: [],
+    deadlineNotifiedJobIds: [],
+    lastRunAt: null,
+    lastError: "",
+  });
   assert.equal(normalizeSearchMonitor({ enabled: true, intervalHours: 3 }).intervalHours, 24);
   assert.equal(normalizeSearchMonitor({ enabled: true, intervalHours: 72 }).intervalHours, 72);
 });

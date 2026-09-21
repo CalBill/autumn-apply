@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  loadApplications, loadDiscovery, saveApplications, saveDiscovery, STORAGE_KEYS,
+  loadApplications, loadDiscovery, loadWechatImportedArticles, saveApplications, saveDiscovery, saveWechatImportedArticles, STORAGE_KEYS,
 } from "./storage.js";
 
 function installStorage(initial = {}) {
@@ -85,6 +85,22 @@ test("legacy discovery records are hydrated without losing their job", async () 
     const loaded = await loadDiscovery();
     assert.equal(loaded.results[0].assessment.job, loaded.results[0].job);
     assert.equal(loaded.results[0].job.title, job.title);
+  } finally {
+    storage.restore();
+  }
+});
+
+test("browser-imported WeChat leads are normalized and deduplicated locally", async () => {
+  const storage = installStorage();
+  try {
+    const saved = await saveWechatImportedArticles([
+      { ...job, id: "wechat-1", sourceType: "wechat-article" },
+      { ...job, id: "wechat-1", title: "更新后的标题", sourceType: "wechat-article" },
+    ]);
+    assert.equal(saved.length, 1);
+    assert.equal(storage.values[STORAGE_KEYS.wechatImportedArticles].length, 1);
+    const loaded = await loadWechatImportedArticles();
+    assert.equal(loaded[0].title, "更新后的标题");
   } finally {
     storage.restore();
   }

@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   discovery: "lastDiscovery",
   companySources: "companySources",
   searchMonitor: "searchMonitor",
+  wechatImportedArticles: "wechatImportedArticles",
 };
 
 function storageArea() {
@@ -101,6 +102,10 @@ function serializeDiscovery(discovery) {
       const job = normalizeJob(entry.job ?? entry.assessment?.job);
       return { ...entry, job, assessment: serializeAssessment(entry.assessment, job) };
     }),
+    allResults: Array.isArray(discovery.allResults) ? discovery.allResults.map((entry) => {
+      const job = normalizeJob(entry.job ?? entry.assessment?.job);
+      return { ...entry, job, assessment: serializeAssessment(entry.assessment, job) };
+    }) : undefined,
   };
 }
 
@@ -112,6 +117,10 @@ function hydrateDiscovery(discovery) {
       const job = normalizeJob(entry.job ?? entry.assessment?.job);
       return { ...entry, job, assessment: hydrateAssessment(entry.assessment, job) };
     }),
+    allResults: Array.isArray(discovery.allResults) ? discovery.allResults.map((entry) => {
+      const job = normalizeJob(entry.job ?? entry.assessment?.job);
+      return { ...entry, job, assessment: hydrateAssessment(entry.assessment, job) };
+    }) : undefined,
   };
 }
 
@@ -125,6 +134,23 @@ export async function saveCompanySources(sources) {
     ? sources.map(({ id, name, url }) => ({ id: String(id), name: String(name), url: String(url), enabled: true }))
     : [];
   await storageArea().set({ [STORAGE_KEYS.companySources]: normalized });
+  return normalized;
+}
+
+export async function loadWechatImportedArticles() {
+  const result = await storageArea().get(STORAGE_KEYS.wechatImportedArticles);
+  const stored = result[STORAGE_KEYS.wechatImportedArticles];
+  return Array.isArray(stored) ? stored.map(normalizeJob) : [];
+}
+
+export async function saveWechatImportedArticles(articles) {
+  const normalized = Array.isArray(articles)
+    ? [...new Map(articles.map((article) => {
+      const job = normalizeJob(article);
+      return [job.id, job];
+    })).values()].slice(-300)
+    : [];
+  await storageArea().set({ [STORAGE_KEYS.wechatImportedArticles]: normalized });
   return normalized;
 }
 

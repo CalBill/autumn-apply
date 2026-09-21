@@ -62,6 +62,6 @@ export function createOfficialProviders(fetchImpl = fetch, customSources = []) {
   ];
 }
 
-export function createDiscoveryProviders(fetchImpl = fetch, customSources = []) {
-  return [...createOfficialProviders(fetchImpl, customSources), createWechatProvider(fetchImpl)];
+export function createDiscoveryProviders(fetchImpl = fetch, customSources = [], importedWechatArticles = []) {
+  return [...createOfficialProviders(fetchImpl, customSources), createWechatProvider(fetchImpl, importedWechatArticles)];
 }

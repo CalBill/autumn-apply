@@ -1,8 +1,9 @@
 import { discoverJobs } from "./shared/discovery.js";
 import { profileHasUsefulData } from "./shared/profile.js";
 import { createDiscoveryProviders } from "./shared/providers/sources.js";
+import { parseSogouWechatArticles } from "./shared/providers/wechat.js";
 import { findUpcomingDeadlines, normalizeSearchMonitor, SEARCH_ALARM_NAME, updateMonitorAfterSearch } from "./shared/search-monitor.js";
-import { loadCompanySources, loadProfile, loadSearchMonitor, saveDiscovery, saveSearchMonitor } from "./shared/storage.js";
+import { loadCompanySources, loadProfile, loadSearchMonitor, loadWechatImportedArticles, saveDiscovery, saveSearchMonitor, saveWechatImportedArticles } from "./shared/storage.js";
 
 async function runMonitor() {
   const monitor = normalizeSearchMonitor(await loadSearchMonitor());
@@ -54,4 +55,19 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 chrome.notifications.onClicked.addListener((notificationId) => {
   if (["autumn-apply-new-jobs", "autumn-apply-deadlines"].includes(notificationId)) chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
+});
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type !== "autumnapply:wechat-results-page") return undefined;
+  (async () => {
+    const articles = parseSogouWechatArticles(String(message.html ?? ""), String(message.query ?? ""))
+      .map((article) => ({
+        ...article,
+        metadata: { ...article.metadata, importedFromBrowser: true },
+      }));
+    const existing = await loadWechatImportedArticles();
+    const saved = await saveWechatImportedArticles([...existing, ...articles]);
+    sendResponse({ imported: articles.length, total: saved.length });
+  })().catch((error) => sendResponse({ imported: 0, error: error.message }));
+  return true;
 });

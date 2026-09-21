@@ -140,8 +140,8 @@ export function createLocalApiServer({ parseResume = parseResumeBuffer, settings
       }
       if (request.method === "POST" && url.pathname === "/v1/ai/search") {
         const body = await readJson(request);
-        const model = await configuredModelFactory();
         const provider = (await settings.status()).provider;
+        const model = await configuredModelFactory();
         writeJson(response, 200, await searchJobsWithAi({ profile: body.profile, instructions: body.instructions, model, provider }), origin);
         return;
       }
